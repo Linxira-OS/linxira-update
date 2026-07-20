@@ -28,7 +28,7 @@ install:
 	install -Dm 755 "src/${source_name}.sh" "${DESTDIR}${PREFIX}/bin/${pkgname}"
 
 	# Install libraries
-	install -Dm 755 src/lib/* -t "${DESTDIR}${PREFIX}/share/${pkgname}/lib/"
+	find src/lib -maxdepth 1 -type f -exec install -Dm 755 {} -t "${DESTDIR}${PREFIX}/share/${pkgname}/lib/" \;
 
 	# Install icons
 	install -Dm 664 "res/icons/cachy-update-blue.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-blue.svg"
@@ -82,6 +82,7 @@ clean:
 	for locale in $(locales); do \
 		rm -f "po/$${locale}.mo"; \
 	done
+	rm -rf src/lib/__pycache__ test/__pycache__
 
 uninstall:
 	# Delete main script
