@@ -38,9 +38,7 @@ else
 	fi
 
 	# shellcheck disable=SC2154
-	if [ ! -f "${statedir}/last_updates_check" ]; then
-		touch "${statedir}/last_updates_check"
-	fi
+	touch "${statedir}"/last_updates_check{,_packages,_aur,_flatpak}
 
 	# shellcheck disable=SC2154
 	exec {fd_tray}>"${tmpdir}/tray.lock"

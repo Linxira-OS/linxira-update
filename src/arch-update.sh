@@ -1,18 +1,19 @@
 #!/bin/bash
 
-# arch-update: An interactive update notifier & applier for Arch Linux that assists you with important pre / post update tasks
+# linxira-update: Interactive system updates and maintenance for Linxira OS
 # https://github.com/Antiz96/arch-update
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # General variables
-name="arch-update"
-_name="Arch-Update"
-version="3.20.2"
+name="linxira-update"
+_name="Linxira Update"
+text_domain="Linxira-Update"
+version="0.1.0"
 option="${1}"
 
 # Define the directory containing libraries
-if [ -n "${ARCH_UPDATE_LIBDIR}" ]; then
-	libdir="${ARCH_UPDATE_LIBDIR}"
+if [ -n "${LINXIRA_UPDATE_LIBDIR}" ]; then
+	libdir="${LINXIRA_UPDATE_LIBDIR}"
 elif [ -d "${XDG_DATA_HOME}/${name}/lib" ]; then
 	libdir="${XDG_DATA_HOME}/${name}/lib"
 elif [ -d "${HOME}/.local/share/${name}/lib" ]; then

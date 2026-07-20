@@ -28,11 +28,11 @@ Options are case sensitive, so capital letters have to be respected.
 *NoVersion*
 	Do not show versions changes for packages when listing pending updates (including when using the `-l / --list` option, see the *arch-update*(1) man page for more details).
 
-*NoAUR*
-	Ignore AUR packages support.
+*EnableAUR*
+	Enable optional AUR package checks and updates. Disabled by default on Linxira OS.
 
-*NoFlatpak*
-	Ignore Flatpak packages support.
+*EnableFlatpak*
+	Enable optional Flatpak checks and updates. Disabled by default on Linxira OS.
 
 *NoNotification*
 	Do not send desktop notifications.

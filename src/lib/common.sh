@@ -34,17 +34,16 @@ checkupdates_db_tmpdir_prefix="${tmpdir}/checkupdates-"
 # Declare necessary parameters for translations
 # shellcheck disable=SC1091
 . gettext.sh
-# Using "Arch-Update" as TEXTDOMAIN to avoid conflicting with the "arch-update" TEXTDOMAIN used by the "Arch Linux Updates Indicator" Gnome extension (https://extensions.gnome.org/extension/1010/archlinux-updates-indicator/)
 # shellcheck disable=SC2154
-export TEXTDOMAIN="${_name}"
+export TEXTDOMAIN="${text_domain}"
 # Check where the translation files are installed (depending on the PREFIX used during the installation) to see if the default TEXTDOMAINDIR path (/usr/share/locale) should be superseded
-if [ -f "${XDG_DATA_HOME}/locale/fr/LC_MESSAGES/${_name}.mo" ]; then
+if [ -f "${XDG_DATA_HOME}/locale/fr/LC_MESSAGES/${text_domain}.mo" ]; then
 	export TEXTDOMAINDIR="${XDG_DATA_HOME}/locale"
-elif [ -f "${HOME}/.local/share/locale/fr/LC_MESSAGES/${_name}.mo" ]; then
+elif [ -f "${HOME}/.local/share/locale/fr/LC_MESSAGES/${text_domain}.mo" ]; then
 	export TEXTDOMAINDIR="${HOME}/.local/share/locale"
-elif [ -f "${XDG_DATA_DIRS}/locale/fr/LC_MESSAGES/${_name}.mo" ]; then
+elif [ -f "${XDG_DATA_DIRS}/locale/fr/LC_MESSAGES/${text_domain}.mo" ]; then
 	export TEXTDOMAINDIR="${XDG_DATA_DIRS}/locale"
-elif [ -f "/usr/local/share/locale/fr/LC_MESSAGES/${_name}.mo" ]; then
+elif [ -f "/usr/local/share/locale/fr/LC_MESSAGES/${text_domain}.mo" ]; then
 	export TEXTDOMAINDIR="/usr/local/share/locale"
 fi
 
@@ -206,14 +205,16 @@ check_diff_prog () {
 # Definition of the icon_up-to-date function: Change tray icon to "up to date"
 icon_up-to-date() {
 	# shellcheck disable=SC2154
-	echo "cachy-update-${tray_icon_style}" > "${statedir}/tray_icon"
+	echo "linxira-update-${tray_icon_style}" > "${statedir}/tray_icon"
 }
 
 # Definition of the icon_updates-available function: Change tray icon to "updates available"
 icon_updates-available() {
 	# shellcheck disable=SC2154
-	echo "cachy-update_updates-available-${tray_icon_style}${colorblind_mode}" > "${statedir}/tray_icon"
+	echo "linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" > "${statedir}/tray_icon"
 }
+
+status_writer="${libdir}/write_status.py"
 
 # Definition of commands to always run on exit (e.g. cleanup of files / dirs which have no purpose being kept)
 cleanup() {

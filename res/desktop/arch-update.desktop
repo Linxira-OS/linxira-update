@@ -1,17 +1,8 @@
 [Desktop Entry]
-Name=Cachy-Update
-Comment=An interactive update notifier & applier for CachyOS
-Comment[be]=Інтэрактыўны апавяшчальнік і ўсталёўшчык абнаўленняў для CachyOS
-Comment[bg]=Интерактивен нотификатор и инструмент за актуализиране за CachyOS
-Comment[de]=Ein interaktiver Update-Benachrichtiger und -Anwender für CachyOS
-Comment[eu]=CachyOSrako eguneraketa-jakinarazle eta aplikatzaile interaktiboa.
-Comment[fr]=Un notificateur & applicateur de mises à jour interactif pour CachyOS
-Comment[it]=Un sistema interattivo di notifica & applicazione degli aggiornamenti per CachyOS
-Comment[ja]=CachyOS 用の対話式アップデート通知 & 適用システム
-Comment[ka]=ინტერაქტიური განახლებების შეტყობინება და გადატარება CachyOS-ისთვის
-Comment[nb]=En interaktiv oppdateringsvarsler og -gjennomfører for CachyOS
-Icon=cachy-update-blue
+Name=Linxira Update
+Comment=Check and apply Linxira OS system updates
+Icon=linxira-update-blue
 Type=Application
 Terminal=true
-Exec=arch-update
+Exec=linxira-update
 Categories=Utility

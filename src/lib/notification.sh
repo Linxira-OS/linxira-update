@@ -13,16 +13,16 @@
 if [ "${update_number}" -eq 1 ]; then
 	if [ -z "${last_notif_id}" ]; then
 		# shellcheck disable=SC2154
-		notify-send -p -a "Cachy-Update" -n "cachy-update_updates-available-${tray_icon_style}${colorblind_mode}" "Cachy-Update" "$(eval_gettext "\${update_number} update available")" -A "run=$(eval_gettext "Run Cachy-Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
+		notify-send -p -a "Linxira Update" -n "linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" "Linxira Update" "$(eval_gettext "\${update_number} update available")" -A "run=$(eval_gettext "Run Linxira Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
 	else
 		# shellcheck disable=SC2154
-		notify-send -p -r "${last_notif_id}" -a "Cachy-Update" -n "cachy-update_updates-available-${tray_icon_style}${colorblind_mode}" "Cachy-Update" "$(eval_gettext "\${update_number} update available")" -A "run=$(eval_gettext "Run Cachy-Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
+		notify-send -p -r "${last_notif_id}" -a "Linxira Update" -n "linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" "Linxira Update" "$(eval_gettext "\${update_number} update available")" -A "run=$(eval_gettext "Run Linxira Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
 	fi
 else
 	if [ -z "${last_notif_id}" ]; then
-		notify-send -p -a "Cachy-Update" -n "cachy-update_updates-available-${tray_icon_style}${colorblind_mode}" "Cachy-Update" "$(eval_gettext "\${update_number} updates available")" -A "run=$(eval_gettext "Run Cachy-Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
+		notify-send -p -a "Linxira Update" -n "linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" "Linxira Update" "$(eval_gettext "\${update_number} updates available")" -A "run=$(eval_gettext "Run Linxira Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
 	else
-		notify-send -p -r "${last_notif_id}" -a "Cachy-Update" -n "cachy-update_updates-available-${tray_icon_style}${colorblind_mode}" "Cachy-Update" "$(eval_gettext "\${update_number} updates available")" -A "run=$(eval_gettext "Run Cachy-Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
+		notify-send -p -r "${last_notif_id}" -a "Linxira Update" -n "linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" "Linxira Update" "$(eval_gettext "\${update_number} updates available")" -A "run=$(eval_gettext "Run Linxira Update")" -A "close=$(eval_gettext "Close")" > "${tmpdir}/notif_param"
 	fi
 fi
 
@@ -47,6 +47,6 @@ if [ "$(sed -n '2p' "${tmpdir}/notif_param")" == "run" ]; then
 	exec {fd_notif}>"${tmpdir}/notif_action.lock"
 
 	if flock -n "${fd_notif}"; then
-		systemd-run --user --scope --unit="${name}"-run-"$(date +%Y%m%d-%H%M%S)" --quiet /bin/bash -c "gio launch ${desktop_file}" || exit 18
+		systemd-run --user --scope --unit="${name}"-run-"$(date +%Y%m%d-%H%M%S)" --quiet gio launch "${desktop_file}" || exit 18
 	fi
 fi

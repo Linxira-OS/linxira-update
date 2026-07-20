@@ -1,10 +1,11 @@
 [Unit]
-Description=Run arch-update auto check at boot and then once a day
+Description=Periodically check for Linxira OS updates
 
 [Timer]
-OnStartupSec=2min
-RandomizedDelaySec=1h
-OnUnitActiveSec=1d
+OnBootSec=2min
+RandomizedDelaySec=10min
+OnUnitActiveSec=1h
+Persistent=true
 
 [Install]
 WantedBy=timers.target

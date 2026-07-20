@@ -57,6 +57,7 @@ fi
 
 if [ -z "${error_during_update}" ]; then
 	icon_up-to-date
+	"${status_writer}" --state-dir "${statedir}" --available-count 0
 	echo
 	info_msg "$(eval_gettext "The update has been applied\n")"
 fi

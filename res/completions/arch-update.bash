@@ -1,4 +1,4 @@
-_arch-update() {
+_linxira_update() {
 	local arg="${2}"
 	local -a opts
 	opts=('-c --check
@@ -17,4 +17,4 @@ _arch-update() {
 	COMPREPLY=( $(compgen -W "${opts[*]}" -- "${arg}") )
 }
 
-complete -F _arch-update arch-update
+complete -F _linxira_update linxira-update

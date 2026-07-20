@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-# arch-update-tray: A systray applet for Arch-Update
+# Linxira Update system tray
 # https://github.com/Antiz96/arch-update
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Arch-Update System Tray"""
+"""Linxira Update system tray."""
 import gettext
 import logging
 import os
@@ -17,6 +17,10 @@ from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt6.QtCore import QFileSystemWatcher
 
+APP_ID = "linxira-update"
+DISPLAY_NAME = "Linxira Update"
+TEXT_DOMAIN = "Linxira-Update"
+
 # Create logger
 log = logging.getLogger(__name__)
 
@@ -25,10 +29,10 @@ ICON_STATEFILE = None
 
 if 'XDG_STATE_HOME' in os.environ:
     ICON_STATEFILE = os.path.join(
-        os.environ['XDG_STATE_HOME'], 'arch-update', 'tray_icon')
+        os.environ['XDG_STATE_HOME'], APP_ID, 'tray_icon')
 elif 'HOME' in os.environ:
     ICON_STATEFILE = os.path.join(
-        os.environ['HOME'], '.local', 'state', 'arch-update', 'tray_icon')
+        os.environ['HOME'], '.local', 'state', APP_ID, 'tray_icon')
 if not os.path.isfile(ICON_STATEFILE):
     log.error("State icon file does not exist: %s", ICON_STATEFILE)
     sys.exit(1)
@@ -41,22 +45,22 @@ UPDATES_STATEFILE_FLATPAK = None
 
 if 'XDG_STATE_HOME' in os.environ:
     UPDATES_STATEFILE = os.path.join(
-        os.environ['XDG_STATE_HOME'], 'arch-update', 'last_updates_check')
+        os.environ['XDG_STATE_HOME'], APP_ID, 'last_updates_check')
     UPDATES_STATEFILE_PACKAGES = os.path.join(
-        os.environ['XDG_STATE_HOME'], 'arch-update', 'last_updates_check_packages')
+        os.environ['XDG_STATE_HOME'], APP_ID, 'last_updates_check_packages')
     UPDATES_STATEFILE_AUR = os.path.join(
-        os.environ['XDG_STATE_HOME'], 'arch-update', 'last_updates_check_aur')
+        os.environ['XDG_STATE_HOME'], APP_ID, 'last_updates_check_aur')
     UPDATES_STATEFILE_FLATPAK = os.path.join(
-        os.environ['XDG_STATE_HOME'], 'arch-update', 'last_updates_check_flatpak')
+        os.environ['XDG_STATE_HOME'], APP_ID, 'last_updates_check_flatpak')
 elif 'HOME' in os.environ:
     UPDATES_STATEFILE = os.path.join(
-        os.environ['HOME'], '.local', 'state', 'arch-update', 'last_updates_check')
+        os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check')
     UPDATES_STATEFILE_PACKAGES = os.path.join(
-        os.environ['HOME'], '.local', 'state', 'arch-update', 'last_updates_check_packages')
+        os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check_packages')
     UPDATES_STATEFILE_AUR = os.path.join(
-        os.environ['HOME'], '.local', 'state', 'arch-update', 'last_updates_check_aur')
+        os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check_aur')
     UPDATES_STATEFILE_FLATPAK = os.path.join(
-        os.environ['HOME'], '.local', 'state', 'arch-update', 'last_updates_check_flatpak')
+        os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check_flatpak')
 if not os.path.isfile(UPDATES_STATEFILE):
     log.error("State updates file does not exist: %s", UPDATES_STATEFILE)
 
@@ -75,36 +79,38 @@ _ = None
 
 for path in i18n_paths:
     translation_file = os.path.join(
-        path, "locale", "fr", "LC_MESSAGES", "Arch-Update.mo")
+        path, "locale", "fr", "LC_MESSAGES", f"{TEXT_DOMAIN}.mo")
     if os.path.isfile(translation_file):
         path = os.path.join(path, 'locale')
-        t = gettext.translation('Arch-Update', localedir=path, fallback=True)
+        t = gettext.translation(TEXT_DOMAIN, localedir=path, fallback=True)
         _ = t.gettext
         break
 if not _:
-    t = gettext.translation('Arch-Update', fallback=True)
+    t = gettext.translation(TEXT_DOMAIN, fallback=True)
     _ = t.gettext
     log.error("No translation found")
 
-# Launch arch-update with desktop file
-def arch_update():
+# Launch Linxira Update with its fixed desktop file.
+def launch_update():
     """Launch with desktop file"""
     DESKTOP_FILE = None
     if 'XDG_DATA_HOME' in os.environ:
         DESKTOP_FILE = os.path.join(
-            os.environ['XDG_DATA_HOME'], 'applications', 'arch-update.desktop')
+            os.environ['XDG_DATA_HOME'], 'applications', f'{APP_ID}.desktop')
     if not DESKTOP_FILE or not os.path.isfile(DESKTOP_FILE):
         if 'HOME' in os.environ:
             DESKTOP_FILE = os.path.join(
-                os.environ['HOME'], '.local', 'share', 'applications', 'arch-update.desktop')
+                os.environ['HOME'], '.local', 'share', 'applications', f'{APP_ID}.desktop')
     if not DESKTOP_FILE or not os.path.isfile(DESKTOP_FILE):
-        if 'XDG_DATA_DIRS' in os.environ:
-            DESKTOP_FILE = os.path.join(
-                os.environ['XDG_DATA_DIRS'], 'applications', 'arch-update.desktop')
+        for data_dir in os.environ.get('XDG_DATA_DIRS', '').split(':'):
+            candidate = os.path.join(data_dir, 'applications', f'{APP_ID}.desktop')
+            if data_dir and os.path.isfile(candidate):
+                DESKTOP_FILE = candidate
+                break
     if not DESKTOP_FILE or not os.path.isfile(DESKTOP_FILE):
-        DESKTOP_FILE = "/usr/local/share/applications/arch-update.desktop"
+        DESKTOP_FILE = f"/usr/local/share/applications/{APP_ID}.desktop"
     if not os.path.isfile(DESKTOP_FILE):
-        DESKTOP_FILE = "/usr/share/applications/arch-update.desktop"
+        DESKTOP_FILE = f"/usr/share/applications/{APP_ID}.desktop"
     subprocess.run(["gio", "launch", DESKTOP_FILE], check=False)
 
 # Helper function to extract human-readable duration from systemctl JSON output
@@ -156,7 +162,7 @@ class ArchUpdateQt6:
             log.error("Statefile Missing")
             sys.exit(1)
 
-        if contents.startswith("cachy-update"):
+        if contents.startswith("linxira-update"):
             icon = QIcon.fromTheme(contents)
             self.tray.setIcon(icon)
 
@@ -258,9 +264,8 @@ class ArchUpdateQt6:
 
         # Update next check timestamp (always False to not pull unwanted attention)
         timer_left = subprocess.run(
-            "/usr/bin/systemctl --user list-timers arch-update.timer -o json",
+            ["/usr/bin/systemctl", "--user", "list-timers", "linxira-update.timer", "-o", "json"],
             check=False,
-            shell=True,
             capture_output=True,
             text=True,
             timeout=1,
@@ -336,16 +341,16 @@ class ArchUpdateQt6:
         self.menu.addAction(self.menu_check)
         self.menu.addAction(self.menu_exit)
 
-    # Action to run the arch_update function
+    # Action to launch the terminal application.
     def run(self, reason):
-        """Run arch-update"""
+        """Run Linxira Update."""
         if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.MiddleClick, "menu_click_action"):
-            arch_update()
+            launch_update()
 
-    # Action to run `arch-update --check`
+    # Action to run a non-privileged update check.
     def check(self):
         """Run check for updates"""
-        subprocess.run(["arch-update", "--check"], check=False)
+        subprocess.run(["linxira-update", "--check"], check=False)
 
     # Action to exit the systray
     def exit(self):
@@ -365,7 +370,7 @@ class ArchUpdateQt6:
         self.watcher = None
 
         # General application parameters
-        app = QApplication(["Arch-Update"])
+        app = QApplication([APP_ID])
         app.setQuitOnLastWindowClosed(False)
 
         # Icon
@@ -374,15 +379,15 @@ class ArchUpdateQt6:
         self.tray.activated.connect(self.run)
 
         # Tooltip
-        tooltip = _("Cachy-Update")
+        tooltip = DISPLAY_NAME
         self.tray.setToolTip(tooltip)
 
         # Definition of menus titles
         self.menu = QMenu()
-        self.menu_count = QAction(_("Arch-Update"))
+        self.menu_count = QAction(DISPLAY_NAME)
         self.menu_last_check = QAction(_("Last check"))
         self.menu_next_check = QAction(_("Next check"))
-        self.menu_launch = QAction(_("Run Cachy-Update"))
+        self.menu_launch = QAction(_("Run Linxira Update"))
         self.menu_check = QAction(_("Check for updates"))
         self.menu_exit = QAction(_("Exit"))
 

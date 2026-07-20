@@ -91,7 +91,7 @@ if [ -n "${update_available}" ]; then
 			systemd-run --user --unit="${name}"-notification-"$(date +%Y%m%d-%H%M%S)" --quiet \
 				--setenv=DISPLAY="${DISPLAY}" \
 				--setenv=DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS}" \
-				--setenv=TEXTDOMAIN="${_name}" \
+				--setenv=TEXTDOMAIN="${text_domain}" \
 				--setenv=TEXTDOMAINDIR="${TEXTDOMAINDIR}" \
 				--setenv=LANG="${LANG}" \
 				--setenv=LANGUAGE="${LANGUAGE}" \
@@ -119,3 +119,6 @@ fi
 if [ -f "${statedir}/current_updates_check" ]; then
 	mv -f "${statedir}/current_updates_check" "${statedir}/last_updates_check"
 fi
+
+update_number=$(wc -l < "${statedir}/last_updates_check")
+"${status_writer}" --state-dir "${statedir}" --available-count "${update_number}"

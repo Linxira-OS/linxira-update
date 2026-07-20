@@ -1,7 +1,7 @@
 [Unit]
-Description=Run arch-update auto check
+Description=Check for Linxira OS updates
 After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=arch-update --check
+ExecStart=/usr/bin/linxira-update --check

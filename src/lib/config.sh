@@ -18,13 +18,13 @@ if [ -f "${config_file}" ]; then
 	# shellcheck disable=SC2034
 	no_version=$(grep -Eq '^[[:space:]]*NoVersion[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
 
-	# Check the "NoAUR" option in arch-update.conf
+	# AUR and Flatpak updates are opt-in on Linxira OS.
 	# shellcheck disable=SC2034
-	no_aur=$(grep -Eq '^[[:space:]]*NoAUR[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
+	enable_aur=$(grep -Eq '^[[:space:]]*EnableAUR[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
 
 	# Check the "NoFlatpak" option in arch-update.conf
 	# shellcheck disable=SC2034
-	no_flatpak=$(grep -Eq '^[[:space:]]*NoFlatpak[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
+	enable_flatpak=$(grep -Eq '^[[:space:]]*EnableFlatpak[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
 
 	# Check the "NoNotification" option in arch-update.conf
 	# shellcheck disable=SC2034
@@ -74,6 +74,9 @@ if [ -f "${config_file}" ]; then
 	# shellcheck disable=SC2034
 	colorblind_mode=$(grep -Eq '^[[:space:]]*ColorblindMode[[:space:]]*$' "${config_file}" 2> /dev/null && echo "-cb")
 fi
+
+[ -z "${enable_aur}" ] && no_aur="true"
+[ -z "${enable_flatpak}" ] && no_flatpak="true"
 
 # Set the default / fallback value for options that require it (if the arch-update.conf configuration file doesn't exists, if the concerned option is commented or if the set value is invalid) 
 [ -z "${news_num}" ] && news_num="5"
