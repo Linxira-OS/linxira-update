@@ -31,15 +31,15 @@ install:
 	find src/lib -maxdepth 1 -type f -exec install -Dm 755 {} -t "${DESTDIR}${PREFIX}/share/${pkgname}/lib/" \;
 
 	# Install icons
-	install -Dm 664 "res/icons/cachy-update-blue.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-blue.svg"
-	install -Dm 664 "res/icons/cachy-update_updates-available-blue.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-blue.svg"
-	install -Dm 664 "res/icons/cachy-update_updates-available-blue-cb.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-blue-cb.svg"
-	install -Dm 664 "res/icons/cachy-update-light.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-light.svg"
-	install -Dm 664 "res/icons/cachy-update_updates-available-light.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-light.svg"
-	install -Dm 664 "res/icons/cachy-update_updates-available-light-cb.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-light-cb.svg"
-	install -Dm 664 "res/icons/cachy-update-dark.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-dark.svg"
-	install -Dm 664 "res/icons/cachy-update_updates-available-dark.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-dark.svg"
-	install -Dm 664 "res/icons/cachy-update_updates-available-dark-cb.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-dark-cb.svg"
+	install -Dm 664 "res/icons/linxira-update-blue.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-blue.svg"
+	install -Dm 664 "res/icons/linxira-update_updates-available-blue.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-blue.svg"
+	install -Dm 664 "res/icons/linxira-update_updates-available-blue-cb.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-blue-cb.svg"
+	install -Dm 664 "res/icons/linxira-update-light.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-light.svg"
+	install -Dm 664 "res/icons/linxira-update_updates-available-light.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-light.svg"
+	install -Dm 664 "res/icons/linxira-update_updates-available-light-cb.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-light-cb.svg"
+	install -Dm 664 "res/icons/linxira-update-dark.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update-dark.svg"
+	install -Dm 664 "res/icons/linxira-update_updates-available-dark.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-dark.svg"
+	install -Dm 664 "res/icons/linxira-update_updates-available-dark-cb.svg" "${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps/linxira-update_updates-available-dark-cb.svg"
 
 	# Install .desktop files
 	install -Dm 644 "res/desktop/${source_name}.desktop" "${DESTDIR}${PREFIX}/share/applications/${pkgname}.desktop"
