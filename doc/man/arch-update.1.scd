@@ -31,7 +31,6 @@ Optional support for:
 - AUR packages (via `paru`, `yay` or `pikaur`).
 - Flatpak packages (via `flatpak`).
 - Desktop notifications (via `libnotify`).
-- Check for ALHP build queue or outdated mirrors (via `alhp-utils`).
 
 # OPTIONS
 
@@ -246,7 +245,10 @@ See https://github.com/Vladimir-csp/xdg-terminal-exec?tab=readme-ov-file#configu
 	Another instance of Arch-Update is already running.
 
 *18*
-	Error when running Arch-Update from the desktop notification action.
+	An update source check failed.
+
+*19*
+	The configured repositories do not cover all installed Linxira-owned packages.
 
 # SEE ALSO
 

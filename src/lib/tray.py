@@ -12,13 +12,14 @@ import sys
 import subprocess
 import time
 import json
-from math import floor
 from PyQt6.QtGui import QIcon, QAction
-from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PyQt6.QtCore import QFileSystemWatcher
+from PyQt6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QMenu, QPushButton, QSystemTrayIcon, QVBoxLayout
+from PyQt6.QtCore import QFileSystemWatcher, QProcess
+from tray_utils import get_next_check_duration_human_readable
 
 APP_ID = "linxira-update"
 DISPLAY_NAME = "Linxira Update"
+APP_VERSION = "0.1.0"
 TEXT_DOMAIN = "Linxira-Update"
 
 # Create logger
@@ -42,6 +43,7 @@ UPDATES_STATEFILE = None
 UPDATES_STATEFILE_PACKAGES = None
 UPDATES_STATEFILE_AUR = None
 UPDATES_STATEFILE_FLATPAK = None
+STATUS_STATEFILE = None
 
 if 'XDG_STATE_HOME' in os.environ:
     UPDATES_STATEFILE = os.path.join(
@@ -52,6 +54,8 @@ if 'XDG_STATE_HOME' in os.environ:
         os.environ['XDG_STATE_HOME'], APP_ID, 'last_updates_check_aur')
     UPDATES_STATEFILE_FLATPAK = os.path.join(
         os.environ['XDG_STATE_HOME'], APP_ID, 'last_updates_check_flatpak')
+    STATUS_STATEFILE = os.path.join(
+        os.environ['XDG_STATE_HOME'], APP_ID, 'status.json')
 elif 'HOME' in os.environ:
     UPDATES_STATEFILE = os.path.join(
         os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check')
@@ -61,6 +65,8 @@ elif 'HOME' in os.environ:
         os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check_aur')
     UPDATES_STATEFILE_FLATPAK = os.path.join(
         os.environ['HOME'], '.local', 'state', APP_ID, 'last_updates_check_flatpak')
+    STATUS_STATEFILE = os.path.join(
+        os.environ['HOME'], '.local', 'state', APP_ID, 'status.json')
 if not os.path.isfile(UPDATES_STATEFILE):
     log.error("State updates file does not exist: %s", UPDATES_STATEFILE)
 
@@ -113,32 +119,6 @@ def launch_update():
         DESKTOP_FILE = f"/usr/share/applications/{APP_ID}.desktop"
     subprocess.run(["gio", "launch", DESKTOP_FILE], check=False)
 
-# Helper function to extract human-readable duration from systemctl JSON output
-def get_next_check_duration_human_readable(input_json):
-    """Calculate human-readable duration from systemctl output"""
-    result = None
-    timer_json = json.loads(input_json)
-    if timer_json:
-        next_microseconds = timer_json[0].get("next")
-        if next_microseconds:
-            seconds = floor((next_microseconds - int(time.time() * 1_000_000))/1_000_000)
-            days = floor(seconds/86400)
-            hours = floor((seconds % 86400) / 3600)
-            minutes = floor((seconds % 3600) / 60)
-            seconds = floor(seconds % 60)
-            parts = []
-            if days > 0:
-                parts.append(f"{days}d")
-            if hours > 0:
-                parts.append(f"{hours}h")
-            if minutes > 0:
-                parts.append(f"{minutes}m")
-            if seconds > 0:
-                parts.append(f"{seconds}s")
-            if parts:
-                result = " ".join(parts)
-    return result
-
 # User Interface
 class ArchUpdateQt6:
     """System Tray using QT6 library"""
@@ -162,7 +142,7 @@ class ArchUpdateQt6:
             log.error("Statefile Missing")
             sys.exit(1)
 
-        if contents.startswith("linxira-update"):
+        if contents.startswith("linxira-update") or contents == "dialog-warning":
             icon = QIcon.fromTheme(contents)
             self.tray.setIcon(icon)
 
@@ -247,15 +227,44 @@ class ArchUpdateQt6:
         updates_count_aur = len(updates_list_aur)
         updates_count_flatpak = len(updates_list_flatpak)
 
+        if self.watcher and self.statusfile and os.path.isfile(self.statusfile) and self.statusfile not in self.watcher.files():
+            self.watcher.addPath(self.statusfile)
+
+        check_status = "unknown"
+        check_message = _("No successful update check has been recorded")
+        try:
+            with open(self.statusfile, encoding="utf-8") as status_stream:
+                status = json.load(status_stream)
+            if isinstance(status, dict):
+                check_status = status.get("check_status", "unknown")
+                check_message = status.get("message", "")
+        except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError):
+            pass
+
         # Update the update main menu title accordingly
-        if updates_count == 0:
+        if check_status == "unknown":
+            self.menu_count.setText(_("Update status unavailable"))
+            self.menu_count.setToolTip(check_message)
+            self.menu_count.setEnabled(False)
+        elif check_status == "error":
+            self.menu_count.setText(_("Update check failed"))
+            self.menu_count.setToolTip(check_message)
+            self.menu_count.setEnabled(False)
+        elif check_status == "incomplete":
+            self.menu_count.setText(_("Update check incomplete ({updates} known)").format(updates=updates_count))
+            self.menu_count.setToolTip(check_message)
+            self.menu_count.setEnabled(False)
+        elif updates_count == 0:
             self.menu_count.setText(_("System is up to date"))
+            self.menu_count.setToolTip("")
             self.menu_count.setEnabled(False)
         elif updates_count == 1:
             self.menu_count.setText(_("1 update available"))
+            self.menu_count.setToolTip("")
             self.menu_count.setEnabled(True)
         else:
             self.menu_count.setText(_("{updates} updates available").format(updates=updates_count))
+            self.menu_count.setToolTip("")
             self.menu_count.setEnabled(True)
 
         # Update last check timestamp (always False to not pull unwanted attention)
@@ -263,14 +272,18 @@ class ArchUpdateQt6:
         self.menu_last_check.setEnabled(False)
 
         # Update next check timestamp (always False to not pull unwanted attention)
-        timer_left = subprocess.run(
-            ["/usr/bin/systemctl", "--user", "list-timers", "linxira-update.timer", "-o", "json"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=1,
-        )
-        next_check_output = get_next_check_duration_human_readable(timer_left.stdout.strip())
+        try:
+            timer_left = subprocess.run(
+                ["/usr/bin/systemctl", "--user", "list-timers", "linxira-update.timer", "-o", "json"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=1,
+            )
+            next_check_output = get_next_check_duration_human_readable(timer_left.stdout.strip()) if timer_left.returncode == 0 else None
+        except (subprocess.TimeoutExpired, OSError):
+            log.warning("Unable to query the Linxira Update timer")
+            next_check_output = None
 
         if next_check_output:
             self.menu_next_check = QAction(_("Next check in {time}").format(time=next_check_output))
@@ -339,18 +352,59 @@ class ArchUpdateQt6:
         self.menu.addSeparator()
         self.menu.addAction(self.menu_launch)
         self.menu.addAction(self.menu_check)
+        self.menu.addAction(self.menu_about)
         self.menu.addAction(self.menu_exit)
 
     # Action to launch the terminal application.
     def run(self, reason):
         """Run Linxira Update."""
+        if self.check_process.state() != QProcess.ProcessState.NotRunning:
+            return
         if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.MiddleClick, "menu_click_action"):
             launch_update()
 
     # Action to run a non-privileged update check.
     def check(self):
         """Run check for updates"""
-        subprocess.run(["linxira-update", "--check"], check=False)
+        if self.check_process.state() != QProcess.ProcessState.NotRunning:
+            return
+        self.menu_check.setEnabled(False)
+        self.menu_launch.setEnabled(False)
+        self.menu_count.setEnabled(False)
+        self.check_process.start("linxira-update", ["--check"])
+
+    def check_finished(self):
+        """Re-enable the manual check action when its process exits."""
+        self.menu_check.setEnabled(True)
+        self.menu_launch.setEnabled(True)
+        self.update_dropdown_menus()
+
+    def about(self):
+        """Show project identity and maintenance links."""
+        dialog = QDialog()
+        dialog.setWindowTitle(_("About Linxira Update"))
+        layout = QVBoxLayout(dialog)
+        title = QLabel(f"<h2>{DISPLAY_NAME}</h2><p>Version {APP_VERSION}</p>")
+        details = QLabel(
+            "<p>System update notifier and maintenance assistant for Linxira OS.</p>"
+            "<p>Developed by Linxira OS contributors.<br/>"
+            "Licensed under the GNU General Public License v3.0 or later.</p>"
+            "<p><a href=\"https://linxira-os.github.io/\">Website</a> | "
+            "<a href=\"https://github.com/Linxira-OS/linxira-update\">Source repository</a> | "
+            "<a href=\"https://github.com/Linxira-OS/linxira-update/issues\">Report a problem</a> | "
+            "<a href=\"https://linxira-os.github.io/linxira-wiki/\">Documentation</a></p>"
+        )
+        details.setOpenExternalLinks(True)
+        details.setWordWrap(True)
+        close_button = QPushButton(_("Close"))
+        close_button.clicked.connect(dialog.accept)
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        buttons.addWidget(close_button)
+        layout.addWidget(title)
+        layout.addWidget(details)
+        layout.addLayout(buttons)
+        dialog.exec()
 
     # Action to exit the systray
     def exit(self):
@@ -367,11 +421,15 @@ class ArchUpdateQt6:
         self.updatesfilepkg = UPDATES_STATEFILE_PACKAGES
         self.updatesfileaur = UPDATES_STATEFILE_AUR
         self.updatesfileflatpak = UPDATES_STATEFILE_FLATPAK
+        self.statusfile = STATUS_STATEFILE
         self.watcher = None
 
         # General application parameters
         app = QApplication([APP_ID])
         app.setQuitOnLastWindowClosed(False)
+        self.check_process = QProcess()
+        self.check_process.finished.connect(self.check_finished)
+        self.check_process.errorOccurred.connect(lambda _error: self.check_finished())
 
         # Icon
         self.tray = QSystemTrayIcon()
@@ -389,6 +447,7 @@ class ArchUpdateQt6:
         self.menu_next_check = QAction(_("Next check"))
         self.menu_launch = QAction(_("Run Linxira Update"))
         self.menu_check = QAction(_("Check for updates"))
+        self.menu_about = QAction(_("About Linxira Update"))
         self.menu_exit = QAction(_("Exit"))
 
         # Initialisation of the dynamic dropdown menus
@@ -404,17 +463,22 @@ class ArchUpdateQt6:
         self.menu.addSeparator()
         self.menu.addAction(self.menu_launch)
         self.menu.addAction(self.menu_check)
+        self.menu.addAction(self.menu_about)
         self.menu.addAction(self.menu_exit)
 
         self.menu_count.triggered.connect(lambda: self.run("menu_click_action"))
         self.menu_launch.triggered.connect(lambda: self.run("menu_click_action"))
         self.menu_check.triggered.connect(self.check)
+        self.menu_about.triggered.connect(self.about)
         self.menu_exit.triggered.connect(self.exit)
 
         self.tray.setContextMenu(self.menu)
 
         # File Watcher (watches for statefiles content changes)
-        self.watcher = QFileSystemWatcher([self.iconfile, self.updatesfile, self.updatesfilepkg, self.updatesfileaur, self.updatesfileflatpak])
+        watched_files = [self.iconfile, self.updatesfile, self.updatesfilepkg, self.updatesfileaur, self.updatesfileflatpak]
+        if self.statusfile and os.path.isfile(self.statusfile):
+            watched_files.append(self.statusfile)
+        self.watcher = QFileSystemWatcher(watched_files)
         self.watcher.fileChanged.connect(self.file_changed)
 
         # Initial file check to set the right icon and dynamic menu text

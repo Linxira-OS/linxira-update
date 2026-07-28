@@ -32,8 +32,28 @@ class StatusTests(unittest.TestCase):
             document = json.loads((Path(directory) / "status.json").read_text(encoding="utf-8"))
         self.assertEqual(document["version"], 1)
         self.assertEqual(document["available_update_count"], 4)
+        self.assertEqual(document["check_status"], "ok")
         self.assertFalse(document["reboot_required"])
         self.assertTrue(document["last_check"].endswith("Z"))
+
+    def test_failed_check_is_explicit_in_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch("sys.argv", [
+                "write_status.py",
+                "--state-dir",
+                directory,
+                "--available-count",
+                "2",
+                "--check-status",
+                "error",
+                "--message",
+                "package check timed out",
+            ]), mock.patch.object(write_status, "reboot_required", return_value=False):
+                write_status.main()
+            document = json.loads((Path(directory) / "status.json").read_text(encoding="utf-8"))
+        self.assertEqual(document["available_update_count"], 2)
+        self.assertEqual(document["check_status"], "error")
+        self.assertEqual(document["message"], "package check timed out")
 
 
 if __name__ == "__main__":

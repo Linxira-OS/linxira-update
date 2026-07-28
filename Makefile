@@ -45,6 +45,7 @@ install:
 	install -Dm 644 "res/desktop/${source_name}.desktop" "${DESTDIR}${PREFIX}/share/applications/${pkgname}.desktop"
 	install -Dm 644 "res/desktop/${source_name}-tray.desktop" "${DESTDIR}${PREFIX}/share/applications/${pkgname}-tray.desktop"
 	install -Dm 644 "res/desktop/${source_name}-tray.desktop" "${DESTDIR}${SYSCONFDIR}/xdg/autostart/${pkgname}-tray.desktop"
+	install -Dm 644 "res/org.linxira.Update.metainfo.xml" "${DESTDIR}${PREFIX}/share/metainfo/org.linxira.Update.metainfo.xml"
 
 	# Install systemd units
 	install -Dm 644 "res/systemd/${source_name}.service" "${DESTDIR}${PREFIX}/lib/systemd/user/${pkgname}.service"
@@ -106,6 +107,7 @@ uninstall:
 	rm -f "${DESTDIR}${PREFIX}/share/applications/${pkgname}.desktop"
 	rm -f "${DESTDIR}${PREFIX}/share/applications/${pkgname}-tray.desktop"
 	rm -f "${DESTDIR}${SYSCONFDIR}/xdg/autostart/${pkgname}-tray.desktop"
+	rm -f "${DESTDIR}${PREFIX}/share/metainfo/org.linxira.Update.metainfo.xml"
 
 	# Delete systemd units
 	rm -f "${DESTDIR}${PREFIX}/lib/systemd/user/${pkgname}.service"

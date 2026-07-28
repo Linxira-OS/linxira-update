@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.linxira.Update</id>
+  <name>Linxira Update</name>
+  <summary>Check and apply system updates on Linxira OS</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <launchable type="desktop-id">linxira-update.desktop</launchable>
+  <provides><binary>linxira-update</binary></provides>
+  <description>
+    <p>Linxira Update checks official package, explicitly enabled AUR, and explicitly enabled Flatpak sources without treating Linxira-owned packages as AUR packages.</p>
+  </description>
+  <developer id="org.linxira"><name>Linxira OS contributors</name></developer>
+  <url type="homepage">https://linxira-os.github.io/</url>
+  <url type="vcs-browser">https://github.com/Linxira-OS/linxira-update</url>
+  <url type="bugtracker">https://github.com/Linxira-OS/linxira-update/issues</url>
+  <url type="help">https://linxira-os.github.io/linxira-wiki/</url>
+  <releases><release version="0.1.0" date="2026-07-26" /></releases>
+  <content_rating type="oars-1.1" />
+</component>

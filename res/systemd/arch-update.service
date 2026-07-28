@@ -4,4 +4,5 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+SuccessExitStatus=19
 ExecStart=/usr/bin/linxira-update --check

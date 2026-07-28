@@ -37,9 +37,6 @@ Options are case sensitive, so capital letters have to be respected.
 *NoNotification*
 	Do not send desktop notifications.
 
-*NoALHPCheck*
-	Disable checking for ALHP build queue or outdated mirrors.
-
 *NewsNum=[Num]*
 	Number of Arch news to display before updating and with the `-n / --news` option (see the *arch-update*(1) man page for more details). Defaults to 5.
 
@@ -50,7 +47,7 @@ Options are case sensitive, so capital letters have to be respected.
 	Timeout threshold for the packages updates check requests (including AUR and Flatpak packages). The value is expressed in seconds and has to be an integer. Setting this option to "0" results in no timeout (no time limit for requests to complete). Defaults to 30.
 
 *AURHelper=[AUR Helper]*
-	AUR helper to be used for AUR packages support. Valid values are `paru`, `yay` or `pikaur`. If this option is not set, Arch-Update will use the first AUR helper available in the following order: `paru` then `yay` then `pikaur` (in case none of them is installed, Arch-Update will not take AUR packages into account).
+	AUR helper to be used when AUR support is enabled. Valid values are `paru`, `yay` or `pikaur`. If this option is not set, the first available helper is used in that order. Installed foreign packages named `linxira` or prefixed with `linxira-` are always excluded: they require a configured Linxira pacman repository and are never treated as AUR packages.
 
 *PrivilegeElevationCommand=[Cmd]*
 	Command to be used for privilege elevation. Valid values are `sudo`, `sudo-rs`, `doas` or `run0`. If this option is not set, Arch-Update will use the first command available in the following order: `sudo`, `sudo-rs`, `doas` then `run0`.

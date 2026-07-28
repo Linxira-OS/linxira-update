@@ -29,7 +29,7 @@ if [ -n "${aur_packages}" ]; then
 	main_msg "$(eval_gettext "Updating AUR Packages...\n")"
 
 	# shellcheck disable=SC2154
-	if ! "${aur_helper}" --color "${pacman_color_opt}" "${devel_flag[@]}" -Syu; then
+	if ! "${aur_helper}" --color "${pacman_color_opt}" "${devel_flag[@]}" "${aur_ignore_args[@]}" -Syu; then
 		echo
 		warning_msg "$(eval_gettext "An error has occurred during the update process\nThe update has been aborted\n")"
 		error_during_update="true"
@@ -56,8 +56,14 @@ if [ -n "${flatpak_packages}" ]; then
 fi
 
 if [ -z "${error_during_update}" ]; then
-	icon_up-to-date
-	"${status_writer}" --state-dir "${statedir}" --available-count 0
+	if [ -n "${linxira_source_incomplete}" ]; then
+		icon_check-error
+		"${status_writer}" --state-dir "${statedir}" --available-count 0 --check-status incomplete \
+			--message "Installed Linxira packages lack a configured update source" || exit 18
+	else
+		icon_up-to-date
+		"${status_writer}" --state-dir "${statedir}" --available-count 0 || exit 18
+	fi
 	echo
 	info_msg "$(eval_gettext "The update has been applied\n")"
 fi

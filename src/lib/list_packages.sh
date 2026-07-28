@@ -6,14 +6,34 @@
 
 info_msg "$(eval_gettext "Looking for updates...\n")"
 
+list_result_tmpdir=$(mktemp -d "${statedir}/.list-result-XXXXX") || exit 16
+touch "${list_result_tmpdir}"/{packages,aur,flatpak,all}
+
+if [ -n "${flatpak_detection_failed}" ]; then
+	warning_msg "$(eval_gettext "Unable to detect installed Flatpak packages (check failed or timed out)\n")"
+	update_check_failed="true"
+fi
+
+if ! detect_linxira_foreign_packages; then
+	warning_msg "$(eval_gettext "Unable to determine Linxira package ownership; AUR checks are disabled\n")"
+	update_check_failed="true"
+elif ! report_missing_linxira_source; then
+	linxira_source_incomplete="true"
+fi
+
 # shellcheck disable=SC2154
 checkupdates_db_tmpdir=$(mktemp -d "${checkupdates_db_tmpdir_prefix}XXXXX")
 # shellcheck disable=SC2154
-packages=$(CHECKUPDATES_DB="${checkupdates_db_tmpdir}" timeout "${update_check_timeout}" checkupdates --nocolor)
+packages=$(CHECKUPDATES_DB="${checkupdates_db_tmpdir}" timeout --kill-after=5s "${update_check_timeout}" checkupdates --nocolor)
 packages_exit_code=$?
 
-if [ "${packages_exit_code}" -eq 124 ]; then
-	warning_msg "$(eval_gettext "Unable to retrieve Packages updates (request timeout)\n")"
+if [ "${packages_exit_code}" -ne 0 ] && [ "${packages_exit_code}" -ne 2 ]; then
+	if [ "${packages_exit_code}" -eq 124 ]; then
+		warning_msg "$(eval_gettext "Unable to retrieve Packages updates (request timeout)\n")"
+	else
+		warning_msg "$(eval_gettext "Unable to retrieve Packages updates (check failed)\n")"
+	fi
+	update_check_failed="true"
 	unset packages
 elif [ -n "${no_version}" ]; then
 	packages=$(echo "${packages}" | awk '{print $1}')
@@ -24,12 +44,17 @@ if [ -n "${aur_helper}" ]; then
 	# The former because it assumes an interactive TTY environment (causing `timeout` to behave unexpectedly) 
 	# The latter because it outputs some descriptive string in stderr when looking for updates with -Qua
 	# shellcheck disable=SC2154
-	unformatted_aur_packages=$(timeout "${update_check_timeout}" "${aur_helper}" --color never "${devel_flag[@]}" -Qua < /dev/null 2> /dev/null)
+	unformatted_aur_packages=$(timeout --kill-after=5s "${update_check_timeout}" "${aur_helper}" --color never "${devel_flag[@]}" "${aur_ignore_args[@]}" -Qua < /dev/null 2> /dev/null)
 	unformatted_aur_packages_exit_code=$?
 	aur_packages=$(echo "${unformatted_aur_packages}" | sed 's/^ *//' | sed 's/ \+/ /g' | grep -vw "\[ignored\]$")
 
-	if [ "${unformatted_aur_packages_exit_code}" -eq 124 ]; then
-		warning_msg "$(eval_gettext "Unable to retrieve AUR Packages updates (request timeout)\n")"
+	if [ "${unformatted_aur_packages_exit_code}" -ne 0 ]; then
+		if [ "${unformatted_aur_packages_exit_code}" -eq 124 ]; then
+			warning_msg "$(eval_gettext "Unable to retrieve AUR Packages updates (request timeout)\n")"
+		else
+			warning_msg "$(eval_gettext "Unable to retrieve AUR Packages updates (check failed)\n")"
+		fi
+		update_check_failed="true"
 		unset aur_packages
 	elif [ -n "${no_version}" ]; then
 		aur_packages=$(echo "${aur_packages}" | awk '{print $1}')
@@ -38,21 +63,32 @@ fi
 
 if [ -n "${flatpak_support}" ]; then
 	# `--foreground` because Flatpak requires interactive authentications through Polkit's `pkttyagent` if it is executed from a TTY / SSH environment
-	timeout --foreground "${update_check_timeout}" flatpak update --appstream > /dev/null
+	timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak update --appstream > /dev/null
 	flatpak_metadata_update_exit_code=$?
 
-	if [ "${flatpak_metadata_update_exit_code}" -eq 124 ]; then
-		warning_msg "$(eval_gettext "Unable to retrieve Flatpak packages updates (request timeout)\n")"
+	if [ "${flatpak_metadata_update_exit_code}" -ne 0 ]; then
+		if [ "${flatpak_metadata_update_exit_code}" -eq 124 ]; then
+			warning_msg "$(eval_gettext "Unable to retrieve Flatpak packages updates (request timeout)\n")"
+		else
+			warning_msg "$(eval_gettext "Unable to retrieve Flatpak packages updates (check failed)\n")"
+		fi
+		update_check_failed="true"
 	else
-		mapfile -t flatpak_mask < <(flatpak mask | tr -d ' ')
+		flatpak_mask_output=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak mask)
+		flatpak_mask_exit_code=$?
+		mapfile -t flatpak_mask < <(printf '%s\n' "${flatpak_mask_output}" | tr -d ' ' | awk 'NF')
 
 		if [ "${#flatpak_mask[@]}" -gt 0 ]; then
-			mapfile -t flatpak_packages < <(flatpak remote-ls --updates --cached --columns=application,version | tr -s '\t' ' ')
+			flatpak_packages_output=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak remote-ls --updates --cached --columns=application,version)
+			flatpak_packages_exit_code=$?
+			mapfile -t flatpak_packages < <(printf '%s\n' "${flatpak_packages_output}" | tr -s '\t' ' ' | awk 'NF')
 
 			declare -A app_names
+			flatpak_names_output=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak list --columns=application,name)
+			flatpak_names_exit_code=$?
 			while read -r flatpak_id flatpak_name; do
 				app_names["${flatpak_id}"]="${flatpak_name}"
-			done < <(flatpak list --columns=application,name)
+			done <<< "${flatpak_names_output}"
 
 			mapfile -t flatpak_packages < <(
 				for packages in "${flatpak_packages[@]}"; do
@@ -74,20 +110,31 @@ if [ -n "${flatpak_support}" ]; then
 			)
 		else
 			if [ -z "${no_version}" ]; then
-				mapfile -t flatpak_packages < <(flatpak remote-ls --updates --cached --columns=name,version | tr -s '\t' ' ')
+				flatpak_packages_output=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak remote-ls --updates --cached --columns=name,version)
 			else
-				mapfile -t flatpak_packages < <(flatpak remote-ls --updates --cached --columns=name)
+				flatpak_packages_output=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak remote-ls --updates --cached --columns=name)
 			fi
+			flatpak_packages_exit_code=$?
+			mapfile -t flatpak_packages < <(printf '%s\n' "${flatpak_packages_output}" | tr -s '\t' ' ' | awk 'NF')
+		fi
+
+		if [ "${flatpak_mask_exit_code}" -ne 0 ] || [ "${flatpak_packages_exit_code}" -ne 0 ] || { [ "${#flatpak_mask[@]}" -gt 0 ] && [ "${flatpak_names_exit_code}" -ne 0 ]; }; then
+			warning_msg "$(eval_gettext "Unable to retrieve Flatpak packages updates (check failed or timed out)\n")"
+			update_check_failed="true"
+			flatpak_packages=()
 		fi
 	fi
 fi
 
-# shellcheck disable=SC2154
-true > "${statedir}/last_updates_check"
-true > "${statedir}/last_updates_check_packages"
-true > "${statedir}/last_updates_check_aur"
-true > "${statedir}/last_updates_check_flatpak"
+if [ -n "${update_check_failed}" ]; then
+	icon_check-error
+	previous_count=$(sed '/^[[:space:]]*$/d' "${statedir}/last_updates_check" 2> /dev/null | wc -l)
+	"${status_writer}" --state-dir "${statedir}" --available-count "${previous_count}" \
+		--check-status error --message "One or more update checks failed" || exit 18
+	exit 18
+fi
 
+# shellcheck disable=SC2154
 # Re-color update list output with version diff highlighting
 color_update_list() {
 	local line pkgname oldver newver counter seg
@@ -119,8 +166,8 @@ if [ -n "${packages}" ]; then
 		echo "${packages}" | color_update_list | column -t
 	fi
 	echo
-	echo "${packages}" >> "${statedir}/last_updates_check"
-	echo "${packages}" > "${statedir}/last_updates_check_packages"
+	echo "${packages}" >> "${list_result_tmpdir}/all"
+	echo "${packages}" > "${list_result_tmpdir}/packages"
 fi
 
 if [ -n "${aur_packages}" ]; then
@@ -131,19 +178,43 @@ if [ -n "${aur_packages}" ]; then
 		echo "${aur_packages}" | color_update_list | column -t
 	fi
 	echo
-	echo "${aur_packages}" >> "${statedir}/last_updates_check"
-	echo "${aur_packages}" > "${statedir}/last_updates_check_aur"
+	echo "${aur_packages}" >> "${list_result_tmpdir}/all"
+	echo "${aur_packages}" > "${list_result_tmpdir}/aur"
 fi
 
 if [ "${#flatpak_packages[@]}" -gt 0 ]; then
 	main_msg "$(eval_gettext "Flatpak Packages:")"
 	printf "%s\n" "${flatpak_packages[@]}" | column -t
 	echo
-	printf "%s\n" "${flatpak_packages[@]}" >> "${statedir}/last_updates_check"
-	printf "%s\n" "${flatpak_packages[@]}" > "${statedir}/last_updates_check_flatpak"
+	printf "%s\n" "${flatpak_packages[@]}" >> "${list_result_tmpdir}/all"
+	printf "%s\n" "${flatpak_packages[@]}" > "${list_result_tmpdir}/flatpak"
+fi
+
+for category in packages aur flatpak; do
+	if ! mv -f "${list_result_tmpdir}/${category}" "${statedir}/last_updates_check_${category}"; then
+		error_msg "$(eval_gettext "Unable to publish update check state")"
+		exit 18
+	fi
+done
+if ! mv -f "${list_result_tmpdir}/all" "${statedir}/last_updates_check"; then
+	error_msg "$(eval_gettext "Unable to publish update check state")"
+	exit 18
+fi
+
+if [ -n "${linxira_source_incomplete}" ]; then
+	known_update_count=$(sed '/^[[:space:]]*$/d' "${statedir}/last_updates_check" | wc -l)
+	"${status_writer}" --state-dir "${statedir}" --available-count "${known_update_count}" \
+		--check-status incomplete --message "Installed Linxira packages lack a configured update source" || exit 18
+else
+	known_update_count=$(sed '/^[[:space:]]*$/d' "${statedir}/last_updates_check" | wc -l)
+	"${status_writer}" --state-dir "${statedir}" --available-count "${known_update_count}" || exit 18
 fi
 
 if [ -z "${packages}" ] && [ -z "${aur_packages}" ] && [ "${#flatpak_packages[@]}" -eq 0 ]; then
+	if [ -n "${linxira_source_incomplete}" ]; then
+		icon_check-error
+		exit 19
+	fi
 	icon_up-to-date
 	info_msg "$(eval_gettext "No update available\n")"
 
@@ -152,11 +223,10 @@ if [ -z "${packages}" ] && [ -z "${aur_packages}" ] && [ "${#flatpak_packages[@]
 	fi
 else
 	icon_updates-available
+	if [ -n "${linxira_source_incomplete}" ] && [ -n "${list_option}" ]; then
+		exit 19
+	fi
 	if [ -z "${list_option}" ]; then
-		if [ -n "${alhp_support}" ]; then
-			# shellcheck source=src/lib/alhp_check.sh disable=SC2154
-			source "${libdir}/alhp_check.sh"
-		fi
 		ask_msg "$(eval_gettext "Proceed with update? [Y/n]")"
 
 		# shellcheck disable=SC2154

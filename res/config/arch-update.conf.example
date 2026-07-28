@@ -7,7 +7,6 @@
 #EnableAUR
 #EnableFlatpak
 #NoNotification
-#NoALHPCheck
 #NewsNum=5
 #NewsTimeout=10
 #UpdateCheckTimeout=30

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# common.sh: Set variables, functions and parameters commonly used across the various Arch-Update stages
+# common.sh: Set variables and functions used across Linxira Update stages
 # https://github.com/Antiz96/arch-update
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -142,8 +142,18 @@ if [ -z "${no_flatpak}" ]; then
 	# shellcheck disable=SC2034
 	flatpak_support=$(command -v flatpak)
 	# Disable flatpak support if flatpak is available but no Flatpak package is installed
-	if [ -n "${flatpak_support}" ] && [ -z "$(flatpak list --user ; flatpak list --system)" ]; then
-		unset flatpak_support
+	if [ -n "${flatpak_support}" ]; then
+		flatpak_user_packages=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak list --user)
+		flatpak_user_exit_code=$?
+		flatpak_system_packages=$(timeout --foreground --kill-after=5s "${update_check_timeout}" flatpak list --system)
+		flatpak_system_exit_code=$?
+		if [ "${flatpak_user_exit_code}" -ne 0 ] || [ "${flatpak_system_exit_code}" -ne 0 ]; then
+			flatpak_detection_failed="true"
+		fi
+		if [ "${flatpak_user_exit_code}" -eq 0 ] && [ "${flatpak_system_exit_code}" -eq 0 ] \
+			&& [ -z "${flatpak_user_packages}${flatpak_system_packages}" ]; then
+			unset flatpak_support
+		fi
 	fi
 fi
 
@@ -151,12 +161,6 @@ fi
 if [ -z "${no_notification}" ]; then
 	# shellcheck disable=SC2034
 	notification_support=$(command -v notify-send)
-fi
-
-# Check if alhp.utils is installed for the optional alhp.utils check support
-if [ -z "${no_alhp_check}" ]; then
-	# shellcheck disable=SC2034
-	alhp_support=$(command -v alhp.utils)
 fi
 
 # Definition of the elevation command to use (depending on which one is installed on the system and if it's not already defined in arch-update.conf)
@@ -214,12 +218,54 @@ icon_updates-available() {
 	echo "linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" > "${statedir}/tray_icon"
 }
 
+icon_check-error() {
+	echo "dialog-warning" > "${statedir}/tray_icon"
+}
+
+# Linxira packages must come from a configured pacman repository, never the AUR.
+# Use exact package names derived from a deliberately narrow ownership boundary.
+detect_linxira_foreign_packages() {
+	local package foreign_packages
+	linxira_protected_packages=()
+	aur_ignore_args=()
+	if ! foreign_packages=$(pacman -Qmq 2> /dev/null); then
+		linxira_source_detection_failed="true"
+		unset aur_helper
+		return 1
+	fi
+	while IFS= read -r package; do
+		case "${package}" in
+			linxira|linxira-*|calamares|shelly)
+				if [[ "${package}" =~ ^[a-zA-Z0-9@._+:~-]+$ ]]; then
+					linxira_protected_packages+=("${package}")
+				fi
+			;;
+		esac
+	done <<< "${foreign_packages}"
+
+	if [ "${#linxira_protected_packages[@]}" -gt 0 ]; then
+		local protected_csv
+		printf -v protected_csv '%s,' "${linxira_protected_packages[@]}"
+		aur_ignore_args=(--ignore "${protected_csv%,}")
+	fi
+	return 0
+}
+
+report_missing_linxira_source() {
+	[ "${#linxira_protected_packages[@]}" -eq 0 ] && return 0
+	warning_msg "$(eval_gettext "No configured pacman repository provides these installed Linxira packages: ")${linxira_protected_packages[*]}"
+	warning_msg "$(eval_gettext "Their updates cannot be checked. Configure Linxira's signed package repository before treating this system as up to date.\n")"
+	return 1
+}
+
 status_writer="${libdir}/write_status.py"
 
 # Definition of commands to always run on exit (e.g. cleanup of files / dirs which have no purpose being kept)
 cleanup() {
 	# shellcheck disable=SC2154
 	[ -d "${checkupdates_db_tmpdir}" ] && rm -rf "${checkupdates_db_tmpdir}"
+	[ -n "${check_result_tmpdir:-}" ] && rm -rf "${check_result_tmpdir}"
+	[ -n "${list_result_tmpdir:-}" ] && rm -rf "${list_result_tmpdir}"
 	[ -n "${kernel_reboot}" ] && tput cnorm
 }
 
