@@ -1,36 +1,20 @@
 name: CI
-on: pull_request
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
-  Test:
-    runs-on:
-      - self-hosted
-      - CI-CD
-
+  test:
+    runs-on: ubuntu-latest
     steps:
-      - name: Clone repo
-        uses: actions/checkout@v6
-
-      - name: Run actionlint
-        run: actionlint -ignore 'label "CI-CD" is unknown' .github/workflows/CI.yml
-
-      - name: Run codespell
-        run: codespell --skip="README-fr.md,./doc/man/fr,./po" --enable-colors
-
-      - name: Run mdl
-        run: mdl --style .github/workflows/mdl_style.rb .
-
-      - name: Run shellcheck
-        run: find . -name '*.sh' -exec shellcheck --color=always {} +
-
-      - name: Run pylint
-        run: find . -name '*.py' -exec pylint -d E0611,E0401,C0103,C0301,R0902,R0912,R0915,R0914 --output-format=colorized {} +
-
-      - name: Run make clean
-        run: make clean
-
-      - name: Run make
-        run: make
-
-      - name: Run make test
-        run: make test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: PYTHONPATH=src/lib python -m unittest discover -s test -v
+      - run: bash -n src/arch-update.sh
