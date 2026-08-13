@@ -86,10 +86,15 @@ fi
 if [ "${#check_errors[@]}" -gt 0 ]; then
 	check_message=$(IFS='; '; echo "${check_errors[*]}")
 	error_msg "${check_message}"
+	# Linxira: 常见根因提示(加速器/hosts 劫持 github.io 会导致 [linxira] 仓库 db 同步失败)
+	error_msg "$(eval_gettext "If the [linxira] repository cannot be reached: run 'sudo pacman -Syy' once and verify connectivity to linxira-os.github.io (VPN / hosts redirection may block it).")"
 	icon_check-error
 	previous_count=$(sed '/^[[:space:]]*$/d' "${statedir}/last_updates_check" | wc -l)
 	"${status_writer}" --state-dir "${statedir}" --available-count "${previous_count}" \
 		--check-status error --message "${check_message}" || exit 18
+	if [ -t 0 ] && [ -t 1 ]; then
+		read -rp "$(eval_gettext "Press Enter to close...")" || true
+	fi
 	exit 18
 fi
 
@@ -140,8 +145,13 @@ update_number=$(sed '/^[[:space:]]*$/d' "${statedir}/last_updates_check" | wc -l
 if [ -n "${check_incomplete}" ]; then
 	[ -z "${update_available}" ] && icon_check-error
 	check_message="$(eval_gettext "Installed Linxira packages lack a configured update source")"
+	error_msg "${check_message}"
+	error_msg "$(eval_gettext "The [linxira] repository must be reachable: run 'sudo pacman -Syy' once and verify connectivity to linxira-os.github.io (VPN / hosts redirection may block it).")"
 	"${status_writer}" --state-dir "${statedir}" --available-count "${update_number}" \
 		--check-status incomplete --message "${check_message}" || exit 18
+	if [ -t 0 ] && [ -t 1 ]; then
+		read -rp "$(eval_gettext "Press Enter to close...")" || true
+	fi
 	exit 19
 fi
 "${status_writer}" --state-dir "${statedir}" --available-count "${update_number}" || exit 18
