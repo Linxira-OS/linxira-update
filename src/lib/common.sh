@@ -225,10 +225,15 @@ icon_check-error() {
 # Linxira packages must come from a configured pacman repository, never the AUR.
 # Use exact package names derived from a deliberately narrow ownership boundary.
 detect_linxira_foreign_packages() {
-	local package foreign_packages
+	local package foreign_packages pacman_query_rc
 	linxira_protected_packages=()
 	aur_ignore_args=()
-	if ! foreign_packages=$(pacman -Qmq 2> /dev/null); then
+	# 2026-09-21: pacman -Qmq 在"无外来包"(空集)时同样返回 1 —— 那是全仓库
+	# 托管的健康状态, 不是检测失败; 仅返回码 >=2 才视为无法判定。
+	foreign_packages=""
+	pacman_query_rc=0
+	foreign_packages=$(pacman -Qmq 2> /dev/null) || pacman_query_rc=$?
+	if [ "${pacman_query_rc}" -gt 1 ]; then
 		linxira_source_detection_failed="true"
 		unset aur_helper
 		return 1

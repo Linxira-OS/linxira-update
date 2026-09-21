@@ -3,6 +3,5 @@ Name=Linxira Update
 Comment=Check and apply Linxira OS system updates
 Icon=linxira-update-blue
 Type=Application
-Terminal=true
-Exec=linxira-update
+Exec=linxira-update --launch
 Categories=Utility

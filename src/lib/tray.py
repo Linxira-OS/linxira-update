@@ -19,7 +19,7 @@ from tray_utils import get_next_check_duration_human_readable
 
 APP_ID = "linxira-update"
 DISPLAY_NAME = "Linxira Update"
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.1.1"
 TEXT_DOMAIN = "Linxira-Update"
 
 # Create logger
@@ -96,28 +96,28 @@ if not _:
     _ = t.gettext
     log.error("No translation found")
 
-# Launch Linxira Update with its fixed desktop file.
+# 2026-09-21: COSMIC 等桌面没有 gio 终端接力, .desktop 的 Terminal=true
+# 会静默失效(点击无反应)。按本机实际存在的终端依次回退, 直接承载交互式更新。
 def launch_update():
-    """Launch with desktop file"""
-    DESKTOP_FILE = None
-    if 'XDG_DATA_HOME' in os.environ:
-        DESKTOP_FILE = os.path.join(
-            os.environ['XDG_DATA_HOME'], 'applications', f'{APP_ID}.desktop')
-    if not DESKTOP_FILE or not os.path.isfile(DESKTOP_FILE):
-        if 'HOME' in os.environ:
-            DESKTOP_FILE = os.path.join(
-                os.environ['HOME'], '.local', 'share', 'applications', f'{APP_ID}.desktop')
-    if not DESKTOP_FILE or not os.path.isfile(DESKTOP_FILE):
-        for data_dir in os.environ.get('XDG_DATA_DIRS', '').split(':'):
-            candidate = os.path.join(data_dir, 'applications', f'{APP_ID}.desktop')
-            if data_dir and os.path.isfile(candidate):
-                DESKTOP_FILE = candidate
-                break
-    if not DESKTOP_FILE or not os.path.isfile(DESKTOP_FILE):
-        DESKTOP_FILE = f"/usr/local/share/applications/{APP_ID}.desktop"
-    if not os.path.isfile(DESKTOP_FILE):
-        DESKTOP_FILE = f"/usr/share/applications/{APP_ID}.desktop"
-    subprocess.run(["gio", "launch", DESKTOP_FILE], check=False)
+    """Launch the interactive update workflow in an available terminal"""
+    for terminal in ("/usr/bin/cosmic-terminal", "/usr/bin/konsole", "/usr/bin/xterm"):
+        if not os.access(terminal, os.X_OK):
+            continue
+        if terminal.endswith("cosmic-terminal"):
+            command = [terminal, "-e", "linxira-update"]
+        elif terminal.endswith("konsole"):
+            command = [terminal, "--hold", "-e", "linxira-update"]
+        else:
+            command = [terminal, "-hold", "-e", "linxira-update"]
+        try:
+            subprocess.Popen(command, start_new_session=True)
+            return
+        except OSError:
+            continue
+    subprocess.run(
+        ["gio", "launch", "/usr/share/applications/org.linxira.Update.desktop"],
+        check=False,
+    )
 
 # User Interface
 class ArchUpdateQt6:

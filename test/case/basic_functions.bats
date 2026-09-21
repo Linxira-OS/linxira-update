@@ -35,3 +35,23 @@ export LINXIRA_UPDATE_LIBDIR="${PWD}/src/lib"
 	[ "${linxira_protected_packages[*]}" = "linxira linxira-update calamares shelly" ]
 	[ "${aur_ignore_args[*]}" = "--ignore linxira,linxira-update,calamares,shelly" ]
 }
+
+@test "Empty foreign package set (repo-managed system) is not a detection failure" {
+	name="linxira-update"
+	text_domain="Linxira-Update"
+	libdir="${PWD}/src/lib"
+	option="--test"
+	no_flatpak="true"
+	no_notification="true"
+	export XDG_STATE_HOME="${BATS_TEST_TMPDIR}/state2"
+	pacman() {
+		# 2026-09-21: pacman -Qmq 无匹配(空集)时返回 1
+		if [ "${1}" = "-Qmq" ]; then
+			return 1
+		fi
+	}
+	source src/lib/common.sh
+	detect_linxira_foreign_packages
+	[ "${linxira_source_detection_failed:-}" != "true" ]
+	[ -z "${linxira_protected_packages[*]}" ]
+}

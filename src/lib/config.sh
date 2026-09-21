@@ -77,7 +77,9 @@ fi
 # Set the default / fallback value for options that require it (if the arch-update.conf configuration file doesn't exists, if the concerned option is commented or if the set value is invalid) 
 [ -z "${news_num}" ] && news_num="5"
 [ -z "${news_timeout}" ] && news_timeout="10"
-[ -z "${update_check_timeout}" ] && update_check_timeout="30"
+# 2026-09-21: 国内网络下完整 core/extra 数据库下载常超 30s, 旧默认值会把
+# "慢"误判为"卡死/失败"; 提高到 120s。
+[ -z "${update_check_timeout}" ] && update_check_timeout="120"
 [ -z "${old_packages_num}" ] && old_packages_num="3"
 [ -z "${uninstalled_packages_num}" ] && uninstalled_packages_num="0"
 [ -z "${tray_icon_style}" ] && tray_icon_style="blue"

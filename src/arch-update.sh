@@ -39,6 +39,12 @@ source "${libdir}/common.sh"
 
 # Source the different libraries depending on the option(s) passed
 case "${option}" in
+	--launch)
+		# 2026-09-21: 由托盘/桌面入口调用 —— 在可用终端中承载交互式更新流程。
+		# COSMIC 等桌面没有 gio 终端接力, .desktop 的 Terminal=true 不可依赖。
+		check_aur_helper
+		source "${libdir}/launch.sh"
+	;;
 	"")
 		# Check for requirements
 		check_su_cmd
