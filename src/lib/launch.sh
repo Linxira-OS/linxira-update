@@ -8,10 +8,10 @@
 
 launch_update_terminal() {
 	local terminal command
-	for terminal in /usr/bin/cosmic-terminal /usr/bin/konsole /usr/bin/xterm; do
+	for terminal in /usr/bin/cosmic-term /usr/bin/konsole /usr/bin/xterm; do
 		[ -x "${terminal}" ] || continue
 		case "${terminal}" in
-			*cosmic-terminal)
+			*cosmic-term)
 				command=("${terminal}" -e linxira-update)
 			;;
 			*konsole)
@@ -25,7 +25,7 @@ launch_update_terminal() {
 		setsid "${command[@]}" > /dev/null 2>&1 &
 		return 0
 	done
-	error_msg "$(eval_gettext "No terminal emulator found (cosmic-terminal, konsole or xterm)")"
+	error_msg "$(eval_gettext "No terminal emulator found (cosmic-term, konsole or xterm)")"
 	return 1
 }
 

@@ -19,7 +19,7 @@ from tray_utils import get_next_check_duration_human_readable
 
 APP_ID = "linxira-update"
 DISPLAY_NAME = "Linxira Update"
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.3"
 TEXT_DOMAIN = "Linxira-Update"
 
 # Create logger
@@ -100,10 +100,10 @@ if not _:
 # 会静默失效(点击无反应)。按本机实际存在的终端依次回退, 直接承载交互式更新。
 def launch_update():
     """Launch the interactive update workflow in an available terminal"""
-    for terminal in ("/usr/bin/cosmic-terminal", "/usr/bin/konsole", "/usr/bin/xterm"):
+    for terminal in ("/usr/bin/cosmic-term", "/usr/bin/konsole", "/usr/bin/xterm"):
         if not os.access(terminal, os.X_OK):
             continue
-        if terminal.endswith("cosmic-terminal"):
+        if terminal.endswith("cosmic-term"):
             command = [terminal, "-e", "linxira-update"]
         elif terminal.endswith("konsole"):
             command = [terminal, "--hold", "-e", "linxira-update"]
