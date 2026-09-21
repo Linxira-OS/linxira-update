@@ -19,7 +19,7 @@ from tray_utils import get_next_check_duration_human_readable
 
 APP_ID = "linxira-update"
 DISPLAY_NAME = "Linxira Update"
-APP_VERSION = "0.1.1"
+APP_VERSION = "0.1.2"
 TEXT_DOMAIN = "Linxira-Update"
 
 # Create logger

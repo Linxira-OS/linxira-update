@@ -25,6 +25,15 @@ fi
 timeout --kill-after=5s "${update_check_timeout}" env CHECKUPDATES_DB="${checkupdates_db_tmpdir}" \
 	checkupdates --nocolor > "${check_result_tmpdir}/packages"
 packages_exit_code=$?
+# 2026-09-21: 国内网络偶发数据库下载失败(并发争用/镜像同步窗口);
+# 硬错误(非超时 124)自动重试一次, 避免偶发把整个检查打成失败。
+if [ "${packages_exit_code}" -ne 0 ] && [ "${packages_exit_code}" -ne 2 ] \
+	&& [ "${packages_exit_code}" -ne 124 ]; then
+	sleep 3
+	timeout --kill-after=5s "${update_check_timeout}" env CHECKUPDATES_DB="${checkupdates_db_tmpdir}" \
+		checkupdates --nocolor > "${check_result_tmpdir}/packages"
+	packages_exit_code=$?
+fi
 if [ "${packages_exit_code}" -ne 0 ] && [ "${packages_exit_code}" -ne 2 ]; then
 	if [ "${packages_exit_code}" -eq 124 ]; then
 		check_errors+=("$(eval_gettext "Package update check timed out")")
