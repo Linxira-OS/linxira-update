@@ -3,5 +3,6 @@ Name=Linxira Update Tray
 Comment=System update status for Linxira OS
 Icon=linxira-update_updates-available-blue
 Type=Application
+NoDisplay=true
 Exec=linxira-update --tray
 Categories=Utility
