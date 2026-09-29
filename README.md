@@ -1,7 +1,7 @@
 # Linxira-Update (fork of [Arch-Update](https://github.com/Antiz96/arch-update))
 
-> Linxira OS 系统更新工具。上游为 CachyOS 的 [cachy-update](https://github.com/CachyOS/cachy-update)，
-> 已完成去 CachyOS 品牌化并重命名为 `linxira-update`。
+> System update tool for Linxira OS. Upstream is CachyOS's [cachy-update](https://github.com/CachyOS/cachy-update),
+> fully de-branded from CachyOS and renamed `linxira-update`.
 
 ## Table of contents
 
@@ -261,3 +261,10 @@ See the [contributing guidelines](https://github.com/Linxira-OS/linxira-update/b
 ## License
 
 Linxira Update is licensed under the [GPL-3.0 license](https://github.com/Linxira-OS/linxira-update/blob/main/LICENSE) (or any later version of that license).
+
+---
+
+## 简体中文
+
+> Linxira OS 系统更新工具。上游为 CachyOS 的 [cachy-update](https://github.com/CachyOS/cachy-update)，
+> 已完成去 CachyOS 品牌化并重命名为 `linxira-update`。
