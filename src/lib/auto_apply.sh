@@ -86,7 +86,18 @@ auto_apply_publish() {
 }
 
 run_auto_apply() {
+	# 触发面硬门控: 仅无人值守服务单元（arch-update.service 注入 LINXIRA_UPDATE_UNATTENDED=1）
+	# 允许自动应用；托盘/终端手动 --check 永不自动应用。TTY 检查为纵深防御。
+	if [ -z "${LINXIRA_UPDATE_UNATTENDED:-}" ] || [ -t 0 ] || [ -t 1 ]; then
+		return 0
+	fi
 	[ "${update_number}" -eq 0 ] && return 0
+	# 与 --launch/full_upgrade 共用同一锁文件：拿不到锁说明有交互升级在跑，
+	# 静默跳过本轮（下个检查周期重试），锁竞争不误报为升级失败。
+	exec {fd_auto_apply}> "${TMPDIR:-/tmp}/${name}.lock"
+	if ! flock -n "${fd_auto_apply}"; then
+		return 0
+	fi
 	auto_apply_tmpdir=$(mktemp -d "${statedir}/.auto-apply-XXXXX") || return 0
 	pacman_color_opt="${pacman_color_opt:-auto}"
 
@@ -108,7 +119,7 @@ run_auto_apply() {
 		icon_up-to-date
 		auto_apply_publish true 0 ok "$(eval_gettext "Updates applied automatically (pre-upgrade snapshot: \${auto_apply_snapshot_id})")" "${auto_apply_snapshot_id}"
 		if [ -n "${notification_support}" ]; then
-			notify-send --app-name="${_name}" --icon="${desktop_file}" \
+			notify-send --app-name="${_name}" --icon="linxira-update_updates-available-${tray_icon_style}${colorblind_mode}" \
 				"$(eval_gettext "Updates applied automatically")" \
 				"$(eval_gettext "Pre-upgrade snapshot: \${auto_apply_snapshot_id}")" 2> /dev/null || true
 		fi

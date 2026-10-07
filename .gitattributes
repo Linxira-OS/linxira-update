@@ -1,0 +1,11 @@
+# 脚本/单元文件一律 LF（CRLF 会让 bash/systemd 解析失败；Windows 编辑器常态陷阱）
+*.sh text eol=lf
+*.py text eol=lf
+*.bats text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.preset text eol=lf
+*.scd text eol=lf
+*.example text eol=lf
+VERSION text eol=lf
+*.json text eol=lf

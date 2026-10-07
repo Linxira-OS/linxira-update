@@ -5,4 +5,6 @@ After=network-online.target
 [Service]
 Type=oneshot
 SuccessExitStatus=19
+# auto-apply 触发面标记: 仅本服务单元视为无人值守(EnableAutoApply); 托盘/终端手动 --check 永不自动应用
+Environment=LINXIRA_UPDATE_UNATTENDED=1
 ExecStart=/usr/bin/linxira-update --check

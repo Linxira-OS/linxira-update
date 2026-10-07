@@ -129,3 +129,12 @@ gate_ready() {
 	[ ! -f "${STATE}/status_calls" ]
 	[ ! -f "${STATE}/pacman_ran" ]
 }
+
+@test "manual and tray sources never auto-apply without unattended marker" {
+	config_enabled
+	gate_ready
+	unset LINXIRA_UPDATE_UNATTENDED
+	run_auto_apply
+	[ ! -f "${STATE}/status_calls" ]
+	[ ! -f "${STATE}/pacman_ran" ]
+}

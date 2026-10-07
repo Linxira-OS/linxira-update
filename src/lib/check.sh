@@ -165,12 +165,13 @@ if [ -n "${check_incomplete}" ]; then
 fi
 "${status_writer}" --state-dir "${statedir}" --available-count "${update_number}" || exit 18
 
-# 全自动更新（EnableAutoApply，默认关）：仅无人值守（systemd timer 等非 TTY 场景）执行；
-# 交互终端永远要求人工确认。门控 + 快照 + 非交互应用契约见 src/lib/auto_apply.sh 头注。
+# 全自动更新（EnableAutoApply，默认关）：仅无人值守服务单元（arch-update.service 注入
+# LINXIRA_UPDATE_UNATTENDED=1）执行；托盘/终端手动 --check 永不自动应用。
+# 非空环境变量是触发主条件（调用来源判定），TTY 检查仅作纵深防御。
 if [ -n "${enable_auto_apply}" ]; then
-	if [ -t 0 ] || [ -t 1 ]; then
+	if [ -z "${LINXIRA_UPDATE_UNATTENDED:-}" ] || [ -t 0 ] || [ -t 1 ]; then
 		echo
-		info_msg "$(eval_gettext "EnableAutoApply is enabled: unattended runs (systemd timer) will apply updates automatically after a verified snapshot. Interactive sessions always ask first.\n")"
+		info_msg "$(eval_gettext "EnableAutoApply is enabled: updates are applied automatically only by the unattended update service after a verified snapshot. Manual and tray checks always ask first.\n")"
 	else
 		# shellcheck source=src/lib/auto_apply.sh
 		source "${libdir}/auto_apply.sh"
