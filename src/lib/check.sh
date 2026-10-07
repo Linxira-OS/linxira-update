@@ -164,3 +164,16 @@ if [ -n "${check_incomplete}" ]; then
 	exit 19
 fi
 "${status_writer}" --state-dir "${statedir}" --available-count "${update_number}" || exit 18
+
+# 全自动更新（EnableAutoApply，默认关）：仅无人值守（systemd timer 等非 TTY 场景）执行；
+# 交互终端永远要求人工确认。门控 + 快照 + 非交互应用契约见 src/lib/auto_apply.sh 头注。
+if [ -n "${enable_auto_apply}" ]; then
+	if [ -t 0 ] || [ -t 1 ]; then
+		echo
+		info_msg "$(eval_gettext "EnableAutoApply is enabled: unattended runs (systemd timer) will apply updates automatically after a verified snapshot. Interactive sessions always ask first.\n")"
+	else
+		# shellcheck source=src/lib/auto_apply.sh
+		source "${libdir}/auto_apply.sh"
+		run_auto_apply
+	fi
+fi

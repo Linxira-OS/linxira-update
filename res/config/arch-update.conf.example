@@ -6,6 +6,7 @@
 #NoVersion
 #EnableAUR
 #EnableFlatpak
+#EnableAutoApply
 #NoNotification
 #NewsNum=5
 #NewsTimeout=10

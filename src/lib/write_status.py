@@ -21,6 +21,8 @@ def main():
         "--check-status", choices=("ok", "error", "incomplete"), default="ok"
     )
     parser.add_argument("--message")
+    parser.add_argument("--pre-snapshot-id")
+    parser.add_argument("--auto-apply", choices=("true", "false"))
     args = parser.parse_args()
     if args.available_count < 0:
         parser.error("available count must be non-negative")
@@ -35,6 +37,10 @@ def main():
     }
     if args.message:
         document["message"] = args.message
+    if args.pre_snapshot_id:
+        document["pre_snapshot_id"] = args.pre_snapshot_id
+    if args.auto_apply is not None:
+        document["auto_apply"] = args.auto_apply == "true"
     descriptor, temporary_name = tempfile.mkstemp(
         dir=args.state_dir, prefix="status.", suffix=".tmp"
     )

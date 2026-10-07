@@ -55,6 +55,46 @@ class StatusTests(unittest.TestCase):
         self.assertEqual(document["check_status"], "error")
         self.assertEqual(document["message"], "package check timed out")
 
+    def test_auto_apply_refusal_records_reason_without_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch("sys.argv", [
+                "write_status.py",
+                "--state-dir",
+                directory,
+                "--available-count",
+                "3",
+                "--auto-apply",
+                "false",
+                "--message",
+                "EnableAutoApply: timeshift is not configured",
+            ]), mock.patch.object(write_status, "reboot_required", return_value=False):
+                write_status.main()
+            document = json.loads((Path(directory) / "status.json").read_text(encoding="utf-8"))
+        self.assertIs(document["auto_apply"], False)
+        self.assertNotIn("pre_snapshot_id", document)
+        self.assertEqual(document["available_update_count"], 3)
+        self.assertEqual(document["check_status"], "ok")
+
+    def test_auto_apply_success_records_snapshot_and_zero_count(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch("sys.argv", [
+                "write_status.py",
+                "--state-dir",
+                directory,
+                "--available-count",
+                "0",
+                "--auto-apply",
+                "true",
+                "--pre-snapshot-id",
+                "20261008T120000Z",
+            ]), mock.patch.object(write_status, "reboot_required", return_value=False):
+                write_status.main()
+            document = json.loads((Path(directory) / "status.json").read_text(encoding="utf-8"))
+        self.assertIs(document["auto_apply"], True)
+        self.assertEqual(document["pre_snapshot_id"], "20261008T120000Z")
+        self.assertEqual(document["available_update_count"], 0)
+        self.assertEqual(document["check_status"], "ok")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 export LINXIRA_UPDATE_LIBDIR="${PWD}/src/lib"
 
 @test "version" {
-	src/arch-update.sh --version | grep -F "Linxira Update 0.1.0"
+	src/arch-update.sh --version | grep -F "Linxira Update $(cat VERSION)"
 }
 
 @test "help" {

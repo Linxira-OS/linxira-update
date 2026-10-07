@@ -14,6 +14,19 @@ date.
 Arch Linux news remains available before upgrades because Linxira uses an Arch
 base and those advisories can still require operator action.
 
+Full unattended updates are opt-in via the `EnableAutoApply` option (off by
+default). When enabled, a non-interactive `--check` run (the systemd user
+timer) applies all pacman repository updates automatically, but only when
+every safety gate passes: btrfs root filesystem, Timeshift configured
+(`linxira-config timeshift enable`), `grub-btrfs-overlayfs` in mkinitcpio
+HOOKS and `grub-btrfsd` enabled. A dedicated pre-upgrade Timeshift snapshot
+is created and verified first; if snapshotting fails the upgrade is refused.
+Interactive terminal sessions always require manual confirmation regardless
+of this option. The status file records the `auto_apply` outcome and the
+`pre_snapshot_id` rollback point; every pacman transaction is also snapshotted
+by `linxira-timeshift-autosnap.hook`, and snapshots boot from the GRUB menu
+for rollback.
+
 Commands:
 
 ```text

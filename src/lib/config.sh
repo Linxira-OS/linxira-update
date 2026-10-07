@@ -22,9 +22,13 @@ if [ -f "${config_file}" ]; then
 	# shellcheck disable=SC2034
 	enable_aur=$(grep -Eq '^[[:space:]]*EnableAUR[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
 
-	# Check the "NoFlatpak" option in arch-update.conf
+	# Check the "EnableFlatpak" option in arch-update.conf
 	# shellcheck disable=SC2034
 	enable_flatpak=$(grep -Eq '^[[:space:]]*EnableFlatpak[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
+
+	# 全自动更新（默认关）：裸键 EnableAutoApply 显式开启，契约见 src/lib/auto_apply.sh。
+	# shellcheck disable=SC2034
+	enable_auto_apply=$(grep -Eq '^[[:space:]]*EnableAutoApply[[:space:]]*$' "${config_file}" 2> /dev/null && echo "true")
 
 	# Check the "NoNotification" option in arch-update.conf
 	# shellcheck disable=SC2034
