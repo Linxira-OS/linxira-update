@@ -55,3 +55,19 @@ repository.
 Linxira's signed package repository and signing key must be provisioned by the
 OS distribution. This updater intentionally does not guess a repository URL or
 enable a package source.
+
+## 开发者批注（人类批注） / Maintainer Annotation (human-authored)
+
+> 以下为维护者人工批注，非自动生成，也不是面向用户的对外承诺。
+
+**推送通道现状**
+
+> 推送需要稳定的服务器，目前测试r s s推送是有问题的无法保证安全更新和安全补丁包推送到位。
+
+**补丁范围界定**
+
+> 我们官方选过的那些可以在安装引导里面安装的那些软件和运行时开发工具，我们只负责打那边的补丁包以及一些更重要的底层补丁包。
+
+**落地状态**
+
+相关代码此前已在另一块硬盘上编写并测试过；当前这棵工作树（本仓库）尚无下发通道，因此线上暂未提供该能力。
