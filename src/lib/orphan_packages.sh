@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # orphan_packages.sh: Display orphan packages and offer to remove them
-# https://github.com/Antiz96/arch-update
+# Based on Arch-Update: Copyright (C) 2021-2026 Antiz96 (https://github.com/Antiz96/arch-update)
+# Modified by Linxira OS contributors (2026-10-24); see UPSTREAM.md for the change list.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 mapfile -t orphan_packages < <(pacman -Qtdq)

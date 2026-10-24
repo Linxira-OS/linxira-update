@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # flatpak_unused_packages.sh: Display flatpak unused packages and offer to remove them
-# https://github.com/Antiz96/arch-update
+# Based on Arch-Update: Copyright (C) 2021-2026 Antiz96 (https://github.com/Antiz96/arch-update)
+# Modified by Linxira OS contributors (2026-10-24); see UPSTREAM.md for the change list.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 flatpak_unused=$(flatpak uninstall --unused | sed -n '/^ 1./,$p' | awk '{print $2}' | grep -v '^$' | sed '$d')
