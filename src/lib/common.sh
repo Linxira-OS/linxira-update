@@ -259,7 +259,7 @@ detect_linxira_foreign_packages() {
 
 report_missing_linxira_source() {
 	[ "${#linxira_protected_packages[@]}" -eq 0 ] && return 0
-	warning_msg "$(eval_gettext "No configured pacman repository provides these installed Linxira packages: ")${linxira_protected_packages[*]}"
+	warning_msg "$(eval_gettext "No synced pacman repository provides these installed Linxira packages (repository unreachable or not configured): ")${linxira_protected_packages[*]}"
 	warning_msg "$(eval_gettext "Their updates cannot be checked. Configure Linxira's signed package repository before treating this system as up to date.\n")"
 	return 1
 }

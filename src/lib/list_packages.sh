@@ -29,14 +29,24 @@ packages=$(CHECKUPDATES_DB="${checkupdates_db_tmpdir}" timeout --kill-after=5s "
 packages_exit_code=$?
 
 if [ "${packages_exit_code}" -ne 0 ] && [ "${packages_exit_code}" -ne 2 ]; then
-	if [ "${packages_exit_code}" -eq 124 ]; then
-		warning_msg "$(eval_gettext "Unable to retrieve Packages updates (request timeout)\n")"
+	# 单个仓库不可达(例如 github.com 超时)会让 checkupdates 整体失败。
+	# 退回已同步的本地数据库, 至少把官方/Linxira 更新显示出来。
+	cached_packages=$(pacman -Qu 2>/dev/null) || cached_packages=""
+	if [ -n "${cached_packages}" ]; then
+		warning_msg "$(eval_gettext "Some package repositories are unreachable; showing updates from the last synced database.\n")"
+		packages="${cached_packages}"
 	else
-		warning_msg "$(eval_gettext "Unable to retrieve Packages updates (check failed)\n")"
+		if [ "${packages_exit_code}" -eq 124 ]; then
+			warning_msg "$(eval_gettext "Unable to retrieve Packages updates (request timeout)\n")"
+		else
+			warning_msg "$(eval_gettext "Unable to retrieve Packages updates (check failed)\n")"
+		fi
+		update_check_failed="true"
+		unset packages
 	fi
-	update_check_failed="true"
-	unset packages
-elif [ -n "${no_version}" ]; then
+fi
+
+if [ -n "${packages:-}" ] && [ -n "${no_version}" ]; then
 	packages=$(echo "${packages}" | awk '{print $1}')
 fi
 
