@@ -259,6 +259,16 @@ detect_linxira_foreign_packages() {
 
 report_missing_linxira_source() {
 	[ "${#linxira_protected_packages[@]}" -eq 0 ] && return 0
+	# 2026-10-27: 安装期 [linxira] 预同步失败时, 已装包会被判成 foreign。
+	# 以 root 运行时直接补一次 -Sy; 否则给出可复制的一行命令。
+	if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+		if timeout 120 pacman -Sy --noconfirm > /dev/null 2>&1; then
+			detect_linxira_foreign_packages
+			[ "${#linxira_protected_packages[@]}" -eq 0 ] && return 0
+		fi
+	else
+		warning_msg "$(eval_gettext "Linxira's package repository database is missing or stale. Run: sudo pacman -Sy")"
+	fi
 	warning_msg "$(eval_gettext "No synced pacman repository provides these installed Linxira packages (repository unreachable or not configured): ")${linxira_protected_packages[*]}"
 	warning_msg "$(eval_gettext "Their updates cannot be checked. Configure Linxira's signed package repository before treating this system as up to date.\n")"
 	return 1

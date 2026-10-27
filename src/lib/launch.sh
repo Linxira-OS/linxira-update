@@ -2,30 +2,30 @@
 # launch.sh: Open the interactive update workflow inside an available terminal.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# 2026-09-21: COSMIC 等桌面没有 gio 终端接力, .desktop 的 Terminal=true 会
-# 静默失效(点击无反应)。按本机实际存在的终端依次回退, 保证任何桌面都能
-# 打开交互式更新窗口。
+# 2026-10-27: 只派发支持 exec 标志的终端; cosmic-term 走 Terminal=true 桌面条目。
+# 不要给 cosmic-term 传 -e: 它只认 -w/--working-directory, 位置参数被当成
+# 文件/工作目录, 进程启动即退, 窗口一闪就没了(COSMIC 下表现为"点了没反应")。
 
 launch_update_terminal() {
-	local terminal command
-	for terminal in /usr/bin/cosmic-term /usr/bin/konsole /usr/bin/xterm; do
+	local terminal
+	for terminal in /usr/bin/konsole /usr/bin/alacritty /usr/bin/xterm; do
 		[ -x "${terminal}" ] || continue
 		case "${terminal}" in
-			*cosmic-term)
-				command=("${terminal}" -e linxira-update)
-			;;
-			*konsole)
-				command=("${terminal}" --hold -e linxira-update)
-			;;
-			*)
-				command=("${terminal}" -hold -e linxira-update)
-			;;
+			# xterm is the only single-dash terminal; konsole/alacritty use --hold.
+			*xterm) setsid "${terminal}" -hold -e linxira-update > /dev/null 2>&1 & ;;
+			*)      setsid "${terminal}" --hold -e linxira-update > /dev/null 2>&1 & ;;
 		esac
-		printf '%s\n' "Launching update workflow in ${terminal}" >&2
-		setsid "${command[@]}" > /dev/null 2>&1 &
 		return 0
 	done
-	error_msg "$(eval_gettext "No terminal emulator found (cosmic-term, konsole or xterm)")"
+	if [ -x /usr/bin/cosmic-term ] && command -v gtk-launch > /dev/null; then
+		local entry="${XDG_DATA_HOME:-${HOME}/.local/share}/applications/linxira-update-$$.desktop"
+		mkdir -p "${entry%/*}" || return 1
+		printf '[Desktop Entry]\nType=Application\nName=Linxira Update\nExec=linxira-update\nTerminal=true\nNoDisplay=true\n' > "${entry}" || return 1
+		setsid gtk-launch "linxira-update-$$" > /dev/null 2>&1 &
+		( sleep 5; rm -f "${entry}" ) > /dev/null 2>&1 &
+		return 0
+	fi
+	error_msg "$(eval_gettext "No terminal emulator found (konsole, alacritty, xterm or cosmic-term)")"
 	return 1
 }
 
