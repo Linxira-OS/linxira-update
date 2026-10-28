@@ -21,11 +21,15 @@ build:
 test:
 	# Run some simple unit tests on basic functions
 	bats test/case/basic_functions.bats
+	bats test/case/pacman_fetch.bats
 	python -m unittest discover -s test -p 'test_*.py'
 
 install:
 	# Install main script
 	install -Dm 755 "src/${source_name}.sh" "${DESTDIR}${PREFIX}/bin/${pkgname}"
+
+	# Install the pacman XferCommand adapter
+	install -Dm 755 "src/linxira-pacman-fetch.sh" "${DESTDIR}${PREFIX}/bin/linxira-pacman-fetch"
 
 	# Install libraries
 	find src/lib -maxdepth 1 -type f -exec install -Dm 755 {} -t "${DESTDIR}${PREFIX}/share/${pkgname}/lib/" \;
