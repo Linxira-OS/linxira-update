@@ -18,6 +18,8 @@
 set -uo pipefail
 
 CONFIG_FILE="${LINXIRA_FETCH_CONFIG:-/etc/linxira/update-mirrors.conf}"
+PROBE_CACHE="${LINXIRA_FETCH_CACHE:-/var/cache/linxira-update/mirror-probe}"
+PROBE_TTL="${LINXIRA_FETCH_TTL:-3600}"
 PROBE_BYTES="${LINXIRA_FETCH_PROBE_BYTES:-131072}"
 PROBE_TIMEOUT="${LINXIRA_FETCH_PROBE_TIMEOUT:-5}"
 
@@ -106,8 +108,29 @@ probe_prefix() {
 	printf '%s\n' "${speed}"
 }
 
+read_cached_prefix() {
+	[ -r "${PROBE_CACHE}" ] || return 1
+	local stamp prefix speed now
+	IFS='|' read -r stamp prefix speed < "${PROBE_CACHE}" || return 1
+	now="$(date +%s)"
+	[ $((now - stamp)) -lt "${PROBE_TTL}" ] || return 1
+	configured_mirrors | grep -qxF -- "${prefix}" || return 1
+	printf '%s\n' "${prefix}"
+}
+
+write_cached_prefix() {
+	mkdir -p "$(dirname "${PROBE_CACHE}")" 2>/dev/null || return 0
+	printf '%s|%s|%s\n' "$(date +%s)" "$1" "$2" > "${PROBE_CACHE}.tmp" 2>/dev/null &&
+		mv "${PROBE_CACHE}.tmp" "${PROBE_CACHE}" 2>/dev/null
+}
+
 choose_prefix() {
 	local url="$1"
+	local cached
+	if cached="$(read_cached_prefix)"; then
+		printf '%s\n' "${cached}"
+		return 0
+	fi
 	local prefix speed best_prefix="direct" best_speed=0
 	while IFS= read -r prefix; do
 		[ -n "${prefix}" ] || continue
@@ -118,6 +141,7 @@ choose_prefix() {
 			fi
 		fi
 	done < <(configured_mirrors)
+	write_cached_prefix "${best_prefix}" "${best_speed}"
 	printf '%s\n' "${best_prefix}"
 }
 
@@ -194,6 +218,7 @@ if is_github_url "${rewritten}"; then
 		download "${candidate}" "${output}" && exit 0
 	done < <(candidates_for "${rewritten}")
 	echo "linxira-pacman-fetch: every mirror failed for ${rewritten}" >&2
+	rm -f "${PROBE_CACHE}" 2>/dev/null
 	exit 1
 fi
 

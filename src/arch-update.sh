@@ -9,7 +9,7 @@
 name="linxira-update"
 _name="Linxira Update"
 text_domain="Linxira-Update"
-version="0.1.11"
+version="0.1.12"
 option="${1}"
 
 # Define the directory containing libraries
