@@ -10,11 +10,7 @@ launch_update_terminal() {
 	local terminal
 	for terminal in /usr/bin/konsole /usr/bin/alacritty /usr/bin/xterm; do
 		[ -x "${terminal}" ] || continue
-		case "${terminal}" in
-			# xterm is the only single-dash terminal; konsole/alacritty use --hold.
-			*xterm) setsid "${terminal}" -hold -e linxira-update > /dev/null 2>&1 & ;;
-			*)      setsid "${terminal}" --hold -e linxira-update > /dev/null 2>&1 & ;;
-		esac
+		setsid "${terminal}" -e linxira-update > /dev/null 2>&1 &
 		return 0
 	done
 	if [ -x /usr/bin/cosmic-term ] && command -v gtk-launch > /dev/null; then
