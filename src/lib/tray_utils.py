@@ -5,6 +5,28 @@ import time
 from math import floor
 
 
+def terminal_candidates(desktop_names=""):
+    """Return (terminal, exec flags) pairs, preferring the session terminal.
+
+    COSMIC and KDE do not share a default terminal.  cosmic-term 1.10+ accepts
+    ``-e``; the old Terminal=true/gtk-launch relay is not reliable on COSMIC.
+    """
+    names = (desktop_names or "").upper()
+    if "COSMIC" in names:
+        return (
+            ("/usr/bin/cosmic-term", ("-e",)),
+            ("/usr/bin/konsole", ("--hold", "-e")),
+            ("/usr/bin/alacritty", ("--hold", "-e")),
+            ("/usr/bin/xterm", ("-hold", "-e")),
+        )
+    return (
+        ("/usr/bin/konsole", ("--hold", "-e")),
+        ("/usr/bin/cosmic-term", ("-e",)),
+        ("/usr/bin/alacritty", ("--hold", "-e")),
+        ("/usr/bin/xterm", ("-hold", "-e")),
+    )
+
+
 def get_next_check_duration_human_readable(input_json, now=None):
     """Return a compact duration from systemctl list-timers JSON."""
     try:

@@ -30,6 +30,15 @@ class TrayTimerTests(unittest.TestCase):
             "now",
         )
 
+    def test_cosmic_prefers_cosmic_term_with_exec(self):
+        candidates = tray_utils.terminal_candidates("COSMIC")
+        self.assertEqual(candidates[0], ("/usr/bin/cosmic-term", ("-e",)))
+        self.assertEqual(len(candidates), 4)
+
+    def test_kde_prefers_konsole(self):
+        candidates = tray_utils.terminal_candidates("KDE")
+        self.assertEqual(candidates[0], ("/usr/bin/konsole", ("--hold", "-e")))
+
 
 if __name__ == "__main__":
     unittest.main()

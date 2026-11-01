@@ -8,8 +8,6 @@
 import gettext
 import logging
 import os
-import shutil
-import shlex
 import sys
 import subprocess
 import time
@@ -18,11 +16,11 @@ from pathlib import Path
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QMenu, QPushButton, QSystemTrayIcon, QVBoxLayout
 from PyQt6.QtCore import QFileSystemWatcher, QProcess
-from tray_utils import get_next_check_duration_human_readable
+from tray_utils import get_next_check_duration_human_readable, terminal_candidates
 
 APP_ID = "linxira-update"
 DISPLAY_NAME = "Linxira Update"
-APP_VERSION = "0.1.12"
+APP_VERSION = "0.1.13"
 TEXT_DOMAIN = "Linxira-Update"
 
 # Create logger
@@ -99,30 +97,20 @@ if not _:
     _ = t.gettext
     log.error("No translation found")
 
-# 2026-10-27: 只派发支持 exec 标志的终端; cosmic-term 走 Terminal=true 桌面条目。
-# 不要给 cosmic-term 传 -e: 它只认 -w/--working-directory, 位置参数被当成
-# 文件/工作目录, 进程启动即退, 窗口一闪就没了(COSMIC 下表现为"点了没反应")。
-def _desktop_exec(argv):
-    return " ".join(
-        '"' + arg.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%") + '"'
-        for arg in argv
-    )
-
-
-def _schedule_desktop_entry_cleanup(entry):
-    subprocess.Popen(
-        ["sh", "-c", f"sleep 5; rm -f {shlex.quote(str(entry))}"],
-        start_new_session=True,
-    )
-
-
+# 2026-11-01: cosmic-term 1.10+ supports -e; dispatch directly instead of
+# relying on the Terminal=true/gtk-launch relay, which is unreliable on COSMIC.
 def launch_update():
-    """Launch the interactive update workflow in an available terminal"""
-    for terminal, flags in (
-        ("/usr/bin/konsole", ("--hold", "-e")),
-        ("/usr/bin/alacritty", ("--hold", "-e")),
-        ("/usr/bin/xterm", ("-hold", "-e")),
-    ):
+    """Launch the interactive update workflow in the session's terminal"""
+    desktop_names = " ".join(
+        filter(
+            None,
+            (
+                os.environ.get("XDG_CURRENT_DESKTOP", ""),
+                os.environ.get("XDG_SESSION_DESKTOP", ""),
+            ),
+        )
+    )
+    for terminal, flags in terminal_candidates(desktop_names):
         if not os.access(terminal, os.X_OK):
             continue
         try:
@@ -130,25 +118,6 @@ def launch_update():
             return
         except OSError:
             continue
-    # cosmic-term has no -e flag; a Terminal=true desktop entry is the only way in.
-    if os.access("/usr/bin/cosmic-term", os.X_OK) and shutil.which("gtk-launch"):
-        share = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
-        entry_dir = share / "applications"
-        entry = entry_dir / f"linxira-update-{os.getpid()}.desktop"
-        try:
-            entry_dir.mkdir(parents=True, exist_ok=True)
-            entry.write_text(
-                "[Desktop Entry]\nType=Application\nName=Linxira Update\n"
-                f"Exec={_desktop_exec(['linxira-update'])}\n"
-                "Terminal=true\nNoDisplay=true\n",
-                encoding="utf-8",
-            )
-            subprocess.Popen(["gtk-launch", entry.stem], start_new_session=True)
-        except OSError:
-            entry.unlink(missing_ok=True)
-        else:
-            _schedule_desktop_entry_cleanup(entry)
-            return
     subprocess.run(
         ["gio", "launch", "/usr/share/applications/org.linxira.Update.desktop"],
         check=False,
