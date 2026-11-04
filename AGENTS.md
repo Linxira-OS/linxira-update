@@ -49,7 +49,7 @@ bash -n src/arch-update.sh
 
 ## 版本与发布
 
-- 版本唯一来源是本仓根 `VERSION`(当前 `0.1.13`);源仓名 `arch-update`、包名 `linxira-update`、显示名 `Linxira-Update`。
+- 版本唯一来源是本仓根 `VERSION`(当前 `0.1.14`);源仓名 `arch-update`、包名 `linxira-update`、显示名 `Linxira-Update`。
 - 改 `VERSION` 触发 `.github/workflows/release.yml`(分支 `main`)自动建 Release,进入 `[linxira]` 全自动链。**禁止手工 bump**。
 - 落地状态以 `README-LINXIRA.md` 为准:当前工作树尚无下发通道,线上暂未提供无人值守更新能力。
 

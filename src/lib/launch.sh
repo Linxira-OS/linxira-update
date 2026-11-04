@@ -19,8 +19,13 @@ launch_update_terminal() {
 
 	for terminal in "${terminals[@]}"; do
 		[ -x "${terminal}" ] || continue
+		if [[ "${terminal}" == */cosmic-term ]]; then
+			# cosmic-term 1.10 has no -e.  Setting SHELL to the command works
+			# on both 1.10 and 1.11 without the broken gtk-launch relay.
+			setsid env SHELL=/usr/bin/linxira-update "${terminal}" --no-daemon > /dev/null 2>&1 &
+			return 0
+		fi
 		case "${terminal}" in
-			*/cosmic-term) flags=(-e) ;;
 			*/alacritty) flags=(--hold -e) ;;
 			*/xterm) flags=(-hold -e) ;;
 			*) flags=(--hold -e) ;;

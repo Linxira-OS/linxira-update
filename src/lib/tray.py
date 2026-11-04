@@ -20,7 +20,7 @@ from tray_utils import get_next_check_duration_human_readable, terminal_candidat
 
 APP_ID = "linxira-update"
 DISPLAY_NAME = "Linxira Update"
-APP_VERSION = "0.1.13"
+APP_VERSION = "0.1.14"
 TEXT_DOMAIN = "Linxira-Update"
 
 # Create logger
@@ -113,8 +113,13 @@ def launch_update():
     for terminal, flags in terminal_candidates(desktop_names):
         if not os.access(terminal, os.X_OK):
             continue
+        if terminal == "/usr/bin/cosmic-term":
+            # cosmic-term 1.10 has no -e; SHELL works on 1.10 and 1.11.
+            argv = ["/usr/bin/env", "SHELL=/usr/bin/linxira-update", terminal, "--no-daemon"]
+        else:
+            argv = [terminal, *flags, "linxira-update"]
         try:
-            subprocess.Popen([terminal, *flags, "linxira-update"], start_new_session=True)
+            subprocess.Popen(argv, start_new_session=True)
             return
         except OSError:
             continue

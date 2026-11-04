@@ -35,6 +35,11 @@ class TrayTimerTests(unittest.TestCase):
         self.assertEqual(candidates[0], ("/usr/bin/cosmic-term", ("-e",)))
         self.assertEqual(len(candidates), 4)
 
+    def test_cosmic_launcher_uses_shell_fallback_for_110(self):
+        source = (Path(__file__).parents[1] / "src/lib/tray.py").read_text(encoding="utf-8")
+        self.assertIn('"SHELL=/usr/bin/linxira-update"', source)
+        self.assertIn('terminal, "--no-daemon"', source)
+
     def test_kde_prefers_konsole(self):
         candidates = tray_utils.terminal_candidates("KDE")
         self.assertEqual(candidates[0], ("/usr/bin/konsole", ("--hold", "-e")))
